@@ -1,0 +1,150 @@
+Build a complete modern e-commerce website from scratch for a fabric/clothing brand.
+
+The website must feel premium, elegant, and “wow” from the first second. Use a blue-based visual identity with a clean luxury look. The site should be fully responsive for mobile, tablet, and desktop, fast, modern, and easy to manage.
+
+Main goal:
+Create a complete online store with a public storefront, product browsing, cart, checkout, payment method, order tracking, and a full owner dashboard/admin panel.
+
+Design direction:
+- Primary color: blue
+- Support colors: white, soft gray, silver, deep navy, subtle gold accents only if needed
+- Style: premium, minimal, modern, trustworthy, polished
+- Typography: use a strong modern font pairing that looks high-end
+- Add tasteful animations, smooth transitions, hover effects, loading states, and section reveals
+- Avoid generic boring layouts
+- Make the homepage feel striking and brand-worthy
+- Use elegant spacing, large hero section, clean cards, and high-end product presentation
+- Everything must be responsive and mobile-first
+
+Website pages and sections:
+1. Home page
+- Hero banner with large headline, subheadline, CTA buttons
+- Featured products section
+- Categories/collections section
+- Best sellers section
+- New arrivals section
+- About brand section
+- Testimonials/reviews section
+- Instagram/social proof section
+- Contact section
+- Newsletter signup
+- Announcement bar at the top
+- Sticky navigation with dropdowns or mega menu if needed
+
+2. Shop / Collection page
+- Product grid
+- Search bar
+- Category filters
+- Price filters
+- Sorting options
+- Quick view
+- Add to cart
+- Wishlist if possible
+- Mobile filter drawer
+
+3. Product detail page
+- Large product gallery with image zoom
+- Product name, price, offer price, description
+- Fabric details
+- Available colors/options if any
+- Quantity selector
+- Add to cart and buy now buttons
+- Related products
+- Shipping info
+- Return/exchange info
+
+4. Cart and checkout
+- Cart drawer or cart page
+- Update quantity/remove items
+- Checkout form with customer details
+- Address form
+- Shipping method section
+- Order summary
+- Coupon code section if possible
+- Payment method selection
+- Order confirmation page
+
+Payment method requirement:
+- Add payment support with at least:
+  - Razorpay online payment
+  - Cash on Delivery
+- If Razorpay keys are needed, ask me clearly for them before finalizing
+- If any payment configuration is missing, ask me exactly what is needed
+- Payment flow must be secure and production-ready
+- Include payment verification and success/failure handling
+
+Owner dashboard / admin panel:
+Create a complete owner dashboard with login and protected access.
+
+Dashboard must include:
+- Overview KPIs:
+  - Total orders
+  - Total revenue
+  - Pending orders
+  - Delivered orders
+  - Total products
+  - Low stock alerts
+- Product management:
+  - Add product
+  - Edit product
+  - Delete product
+  - Upload product images
+  - Manage prices, stock, categories, fabric details, descriptions
+- Order management:
+  - View orders
+  - Change order status
+  - View payment status
+  - View customer details
+  - Update shipping status
+- Category / collection management
+- Banner / homepage content management
+- Site settings management
+- Payment settings section
+- Shipping settings section
+- Contact settings section
+- Owner login/logout
+- Secure admin routes
+- Tables, forms, and filters should be clean and easy to use
+
+Functional requirements:
+- Fully responsive design
+- Smooth navigation
+- Working search and filters
+- Working cart
+- Working checkout
+- Working payment flow
+- Working order creation
+- Working admin dashboard
+- Image upload support
+- Clean backend API if needed
+- Proper validation for forms
+- Loading, success, and error states
+- Good empty states
+- No broken UI on mobile
+
+Brand/content handling:
+- I will provide all product photos, logo, brand name, text content, and any other assets
+- Use placeholder content until I upload the real content
+- Ask me whenever something important is missing
+- Do not guess business details without asking
+
+Important instruction:
+If anything is required from me to continue, stop and ask me clearly before moving forward. I want you to build this properly and not assume missing details.
+
+Technical preference:
+- Build it as a modern production-ready web app
+- Keep the code organized and maintainable
+- Use reusable components
+- Make sure the site is easy for me to update later
+- If a backend is needed, create one
+- If a database is needed, structure it properly
+- If authentication is needed, include it for the owner dashboard
+
+Deliverables:
+- Full responsive storefront
+- Full owner/admin dashboard
+- Payment method integration
+- Order management
+- Product management
+- Professional UI with blue theme
+- Ready to deploy and customize
