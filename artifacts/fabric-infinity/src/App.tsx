@@ -19,11 +19,11 @@ import TrackOrder from '@/pages/TrackOrder';
 import AdminLogin from '@/pages/admin/Login';
 import Dashboard from '@/pages/admin/Dashboard';
 import AdminProducts from '@/pages/admin/Products';
-//import AdminProductForm from '@/pages/admin/ProductForm';
+import AdminProductForm from '@/pages/admin/ProductForm';
 import AdminOrders from '@/pages/admin/Orders';
-//import AdminOrderDetail from '@/pages/admin/OrderDetail';
+import AdminOrderDetail from '@/pages/admin/OrderDetail';
 import AdminCategories from '@/pages/admin/Categories';
-//import AdminSettings from '@/pages/admin/Settings';
+import AdminSettings from '@/pages/admin/Settings';
 
 const queryClient = new QueryClient();
 
@@ -49,24 +49,23 @@ function Router() {
       <Route path="/admin/products">
         <AdminGuard><AdminProducts /></AdminGuard>
       </Route>
-      {/* 
       <Route path="/admin/products/new">
         <AdminGuard><AdminProductForm /></AdminGuard>
       </Route>
       <Route path="/admin/products/:id/edit">
         <AdminGuard><AdminProductForm /></AdminGuard>
       </Route>
-      */}
       <Route path="/admin/orders">
         <AdminGuard><AdminOrders /></AdminGuard>
       </Route>
-      {/* 
       <Route path="/admin/orders/:id">
         <AdminGuard><AdminOrderDetail /></AdminGuard>
       </Route>
-      */}
       <Route path="/admin/categories">
         <AdminGuard><AdminCategories /></AdminGuard>
+      </Route>
+      <Route path="/admin/settings">
+        <AdminGuard><AdminSettings /></AdminGuard>
       </Route>
 
       <Route component={NotFound} />
