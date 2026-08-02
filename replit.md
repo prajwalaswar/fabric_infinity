@@ -10,7 +10,8 @@ A premium Indian handcrafted fabrics e-commerce store featuring Ajrakh, Ikat, bl
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- **Required env:** `DATABASE_URL` — Postgres connection string (API server won't start without it; frontend degrades gracefully to static content)
+- **Required env:** `DATABASE_URL` — Postgres connection string (API server warns but still starts without it; frontend degrades gracefully to static content)
+- **Schema push:** `pnpm --filter @workspace/db run push` — pushes all tables from `lib/db/src/schema/` to the database. Run once after provisioning the DB. This creates all tables including `contact_inquiries` (for the chat widget email inquiries). drizzle-kit reads TypeScript schema directly — no SQL migration files are needed.
 
 ## Stack
 

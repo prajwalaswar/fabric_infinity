@@ -12,6 +12,9 @@ router.post("/contact", async (req, res): Promise<void> => {
     return;
   }
 
+  // NOTE: contact_inquiries table is created by `pnpm --filter @workspace/db run push`,
+  // which reads lib/db/src/schema/index.ts (TypeScript schema) directly.
+  // No SQL migration files are used; run push once DATABASE_URL is configured.
   if (!db) {
     req.log.warn("Contact inquiry received but DATABASE_URL is not set — inquiry not persisted");
     res.status(503).json({
