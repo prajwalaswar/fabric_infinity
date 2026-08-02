@@ -8,6 +8,7 @@ import bannersRouter from "./banners";
 import customersRouter from "./customers";
 import settingsRouter from "./settings";
 import uploadRouter from "./upload";
+import aiRouter from "./ai";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(bannersRouter);
 router.use(customersRouter);
 router.use(settingsRouter);
 router.use(uploadRouter);
+router.use(aiRouter);
 
 export default router;

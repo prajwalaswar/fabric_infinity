@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Upload, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Upload, X, Loader2, Sparkles, Wand2 } from 'lucide-react';
 import { Link } from 'wouter';
 
 interface ProductFormState {
@@ -66,6 +66,8 @@ export default function ProductForm() {
 
   const [form, setForm] = useState<ProductFormState>(defaultState);
   const [uploading, setUploading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [lastUploadedImage, setLastUploadedImage] = useState<string | null>(null);
 
   const { data: product, isLoading: productLoading } = useAdminGetProduct(
     Number(id),
@@ -106,6 +108,7 @@ export default function ProductForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setForm(prev => ({ ...prev, images: [...prev.images, data.url] }));
+      setLastUploadedImage(data.url);
     } catch (err: unknown) {
       toast({ variant: 'destructive', title: 'Upload failed', description: err instanceof Error ? err.message : 'Unknown error' });
     } finally {
@@ -114,8 +117,72 @@ export default function ProductForm() {
     }
   };
 
+  const handleAnalyzeWithAI = async (imageUrl: string) => {
+    setAnalyzing(true);
+    try {
+      const res = await fetch('/api/admin/ai/analyze-fabric', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ imageUrl }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'AI analysis failed');
+      }
+
+      // Auto-fill form fields with AI suggestions
+      setForm(prev => ({
+        ...prev,
+        name: data.name || prev.name,
+        description: data.description || prev.description,
+        fabricDetails: data.fabricDetails || prev.fabricDetails,
+        price: data.suggestedPrice ? String(data.suggestedPrice) : prev.price,
+        offerPrice: data.suggestedOfferPrice ? String(data.suggestedOfferPrice) : prev.offerPrice,
+        // Try to match category name to ID
+        categoryId: matchCategory(data.category, categories) || prev.categoryId,
+      }));
+
+      toast({
+        title: '✨ AI analysis complete',
+        description: 'Product details have been auto-filled. Review and adjust as needed.',
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      if (msg.includes('API key not configured') || msg.includes('API key')) {
+        toast({
+          variant: 'destructive',
+          title: 'Groq API key not set',
+          description: 'Go to Settings → AI Integration to add your free Groq API key.',
+        });
+      } else {
+        toast({ variant: 'destructive', title: 'AI analysis failed', description: msg });
+      }
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  function matchCategory(
+    categoryName: string,
+    cats: Array<{ id: number; name: string }> | undefined
+  ): string {
+    if (!cats || !categoryName) return '';
+    const lower = categoryName.toLowerCase();
+    const match = cats.find(c => c.name.toLowerCase().includes(lower) || lower.includes(c.name.toLowerCase()));
+    return match ? String(match.id) : '';
+  }
+
   const removeImage = (idx: number) => {
-    setForm(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }));
+    setForm(prev => {
+      const newImages = prev.images.filter((_, i) => i !== idx);
+      // If we removed the last-uploaded image, clear it
+      if (lastUploadedImage && !newImages.includes(lastUploadedImage)) {
+        setLastUploadedImage(newImages.length > 0 ? newImages[newImages.length - 1] : null);
+      }
+      return { ...prev, images: newImages };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -165,6 +232,7 @@ export default function ProductForm() {
   }
 
   const isSaving = createProduct.isPending || updateProduct.isPending;
+  const aiImageTarget = lastUploadedImage || form.images[form.images.length - 1] || null;
 
   return (
     <AdminLayout>
@@ -179,6 +247,62 @@ export default function ProductForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Product Images — shown first so AI button appears early */}
+          <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-lg">Product Images</h2>
+              {aiImageTarget && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAnalyzeWithAI(aiImageTarget)}
+                  disabled={analyzing}
+                  className="gap-2 border-primary/40 text-primary hover:bg-primary/5"
+                  data-testid="button-ai-analyze"
+                >
+                  {analyzing ? (
+                    <><Loader2 className="animate-spin" size={15} /> Analyzing...</>
+                  ) : (
+                    <><Wand2 size={15} /><Sparkles size={13} /> Auto-fill with AI</>
+                  )}
+                </Button>
+              )}
+            </div>
+
+            {aiImageTarget && !analyzing && (
+              <p className="text-xs text-muted-foreground -mt-1">
+                Click <strong>Auto-fill with AI</strong> to let Groq analyze the fabric image and fill in product details automatically.
+              </p>
+            )}
+
+            {analyzing && (
+              <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg text-sm text-primary">
+                <Loader2 className="animate-spin shrink-0" size={16} />
+                <span>Analyzing fabric image with AI… this takes a few seconds.</span>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-3">
+              {form.images.map((img, i) => (
+                <div key={i} className={`relative group w-24 h-24 ${img === lastUploadedImage ? 'ring-2 ring-primary ring-offset-1 rounded-lg' : ''}`}>
+                  <img src={img} alt="" className="w-full h-full object-cover rounded-lg border border-border" />
+                  <button type="button" onClick={() => removeImage(i)} className="absolute -top-2 -right-2 bg-destructive text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <X size={12} />
+                  </button>
+                  {img === lastUploadedImage && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-primary/80 text-white text-[10px] text-center rounded-b-lg py-0.5">latest</div>
+                  )}
+                </div>
+              ))}
+              <label className="w-24 h-24 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary transition-colors">
+                {uploading ? <Loader2 className="animate-spin text-muted-foreground" size={20} /> : <><Upload size={20} className="text-muted-foreground" /><span className="text-xs text-muted-foreground">Upload</span></>}
+                <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} data-testid="input-image-upload" />
+              </label>
+            </div>
+          </div>
+
+          {/* Basic Information */}
           <div className="bg-card border border-border rounded-xl p-6 space-y-6">
             <h2 className="font-semibold text-lg">Basic Information</h2>
 
@@ -225,24 +349,7 @@ export default function ProductForm() {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-            <h2 className="font-semibold text-lg">Product Images</h2>
-            <div className="flex flex-wrap gap-3">
-              {form.images.map((img, i) => (
-                <div key={i} className="relative group w-24 h-24">
-                  <img src={img} alt="" className="w-full h-full object-cover rounded-lg border border-border" />
-                  <button type="button" onClick={() => removeImage(i)} className="absolute -top-2 -right-2 bg-destructive text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <X size={12} />
-                  </button>
-                </div>
-              ))}
-              <label className="w-24 h-24 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary transition-colors">
-                {uploading ? <Loader2 className="animate-spin text-muted-foreground" size={20} /> : <><Upload size={20} className="text-muted-foreground" /><span className="text-xs text-muted-foreground">Upload</span></>}
-                <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} data-testid="input-image-upload" />
-              </label>
-            </div>
-          </div>
-
+          {/* Labels & Visibility */}
           <div className="bg-card border border-border rounded-xl p-6 space-y-4">
             <h2 className="font-semibold text-lg">Labels & Visibility</h2>
             {[

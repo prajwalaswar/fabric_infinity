@@ -11,6 +11,7 @@ const SETTING_KEYS = [
   "razorpayEnabled", "codEnabled",
   "instagramUrl", "facebookUrl", "whatsappNumber",
   "metaTitle", "metaDescription", "announcementBar",
+  "groqApiKey",
 ];
 
 async function getAllSettings() {

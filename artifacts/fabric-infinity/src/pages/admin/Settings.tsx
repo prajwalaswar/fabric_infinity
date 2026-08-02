@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, Eye, EyeOff, Bot, Key } from 'lucide-react';
 
 type SettingsState = {
   storeName: string;
@@ -45,6 +45,12 @@ export default function AdminSettings() {
     metaTitle: 'Fabric Infinity', metaDescription: '', announcementBar: '',
   });
 
+  // Groq API key state — kept separate so we never accidentally expose the saved key
+  const [groqApiKey, setGroqApiKey] = useState('');
+  const [groqKeySet, setGroqKeySet] = useState(false);
+  const [showGroqKey, setShowGroqKey] = useState(false);
+  const [savingGroq, setSavingGroq] = useState(false);
+
   useEffect(() => {
     if (data) {
       setForm({
@@ -63,6 +69,9 @@ export default function AdminSettings() {
         metaDescription: toStr(data.metaDescription),
         announcementBar: toStr(data.announcementBar),
       });
+      // If groqApiKey is returned as non-empty (even masked), mark it as set
+      const rawKey = toStr((data as Record<string, unknown>).groqApiKey);
+      setGroqKeySet(rawKey.length > 0 && rawKey !== '');
     }
   }, [data]);
 
@@ -79,6 +88,49 @@ export default function AdminSettings() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/settings'] });
     } catch (err: unknown) {
       toast({ variant: 'destructive', title: 'Save failed', description: err instanceof Error ? err.message : 'Unknown error' });
+    }
+  };
+
+  const handleSaveGroqKey = async () => {
+    if (!groqApiKey.trim()) {
+      toast({ variant: 'destructive', title: 'Please enter a Groq API key' });
+      return;
+    }
+    setSavingGroq(true);
+    try {
+      await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ groqApiKey: groqApiKey.trim() }),
+      });
+      setGroqKeySet(true);
+      setGroqApiKey('');
+      setShowGroqKey(false);
+      toast({ title: 'Groq API key saved', description: 'AI product analysis is now enabled.' });
+    } catch (err: unknown) {
+      toast({ variant: 'destructive', title: 'Failed to save key', description: err instanceof Error ? err.message : 'Unknown error' });
+    } finally {
+      setSavingGroq(false);
+    }
+  };
+
+  const handleRemoveGroqKey = async () => {
+    setSavingGroq(true);
+    try {
+      await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ groqApiKey: '' }),
+      });
+      setGroqKeySet(false);
+      setGroqApiKey('');
+      toast({ title: 'Groq API key removed' });
+    } catch (err: unknown) {
+      toast({ variant: 'destructive', title: 'Failed', description: err instanceof Error ? err.message : 'Unknown error' });
+    } finally {
+      setSavingGroq(false);
     }
   };
 
@@ -99,6 +151,7 @@ export default function AdminSettings() {
       </div>
 
       <div className="space-y-8 max-w-2xl">
+        {/* Store Information */}
         <div className="bg-card border border-border rounded-xl p-6 space-y-5">
           <h2 className="font-semibold text-lg">Store Information</h2>
           <div className="space-y-2"><Label>Store Name</Label><Input value={form.storeName} onChange={e => setForm(p => ({...p, storeName: e.target.value}))} data-testid="input-store-name" /></div>
@@ -109,6 +162,7 @@ export default function AdminSettings() {
           <div className="space-y-2"><Label>Address</Label><Textarea value={form.storeAddress} onChange={e => setForm(p => ({...p, storeAddress: e.target.value}))} rows={3} data-testid="textarea-store-address" /></div>
         </div>
 
+        {/* Shipping */}
         <div className="bg-card border border-border rounded-xl p-6 space-y-5">
           <h2 className="font-semibold text-lg">Shipping</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -117,6 +171,7 @@ export default function AdminSettings() {
           </div>
         </div>
 
+        {/* Payment Methods */}
         <div className="bg-card border border-border rounded-xl p-6 space-y-5">
           <h2 className="font-semibold text-lg">Payment Methods</h2>
           <div className="flex items-center justify-between">
@@ -130,6 +185,87 @@ export default function AdminSettings() {
           </div>
         </div>
 
+        {/* AI Integration */}
+        <div className="bg-card border border-border rounded-xl p-6 space-y-5">
+          <div className="flex items-center gap-2">
+            <Bot size={20} className="text-primary" />
+            <h2 className="font-semibold text-lg">AI Integration (Groq)</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Add your Groq API key to enable AI-powered product analysis. When adding a new product, upload a fabric image and the AI will automatically fill in the name, description, fabric details, and suggested price.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Get a free API key at{' '}
+            <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+              console.groq.com
+            </a>
+            {' '}— no credit card required. When the free limit is exceeded, just replace with a new key below.
+          </p>
+
+          {groqKeySet ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <Key size={16} className="text-green-600 dark:text-green-400" />
+                <span className="text-sm font-medium text-green-700 dark:text-green-300">API key is configured ✓</span>
+              </div>
+              <p className="text-xs text-muted-foreground">To replace the key, enter a new one below and save.</p>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type={showGroqKey ? 'text' : 'password'}
+                    value={groqApiKey}
+                    onChange={e => setGroqApiKey(e.target.value)}
+                    placeholder="Enter new Groq API key to replace..."
+                    className="pr-10"
+                    data-testid="input-groq-api-key"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGroqKey(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showGroqKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <Button onClick={handleSaveGroqKey} disabled={savingGroq || !groqApiKey.trim()} className="gap-2">
+                  {savingGroq ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                  Replace
+                </Button>
+                <Button variant="outline" onClick={handleRemoveGroqKey} disabled={savingGroq} className="text-destructive hover:text-destructive">
+                  Remove
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type={showGroqKey ? 'text' : 'password'}
+                    value={groqApiKey}
+                    onChange={e => setGroqApiKey(e.target.value)}
+                    placeholder="gsk_xxxxxxxxxxxxxxxxxxxx"
+                    className="pr-10"
+                    data-testid="input-groq-api-key"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGroqKey(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showGroqKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <Button onClick={handleSaveGroqKey} disabled={savingGroq || !groqApiKey.trim()} className="gap-2">
+                  {savingGroq ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                  Save Key
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Social Media */}
         <div className="bg-card border border-border rounded-xl p-6 space-y-5">
           <h2 className="font-semibold text-lg">Social Media</h2>
           <div className="space-y-2"><Label>Instagram URL</Label><Input value={form.instagramUrl} onChange={e => setForm(p => ({...p, instagramUrl: e.target.value}))} placeholder="https://instagram.com/..." data-testid="input-instagram-url" /></div>
@@ -137,6 +273,7 @@ export default function AdminSettings() {
           <div className="space-y-2"><Label>WhatsApp Number</Label><Input value={form.whatsappNumber} onChange={e => setForm(p => ({...p, whatsappNumber: e.target.value}))} placeholder="919876543210" data-testid="input-whatsapp-number" /></div>
         </div>
 
+        {/* SEO */}
         <div className="bg-card border border-border rounded-xl p-6 space-y-5">
           <h2 className="font-semibold text-lg">SEO & Announcement</h2>
           <div className="space-y-2"><Label>Meta Title</Label><Input value={form.metaTitle} onChange={e => setForm(p => ({...p, metaTitle: e.target.value}))} data-testid="input-meta-title" /></div>

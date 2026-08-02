@@ -98,8 +98,8 @@ router.get("/admin/dashboard/top-products", requireAdmin, async (req, res): Prom
 
   res.json(products.map(p => ({
     id: p.id, name: p.name, image: p.image ?? null,
-    totalSold: Math.floor(Math.random() * 500) + 100, // placeholder until order items table
-    revenue: parseFloat((Math.random() * 50000 + 5000).toFixed(2)),
+    totalSold: 0,
+    revenue: 0,
     stock: p.stock,
   })));
 });
