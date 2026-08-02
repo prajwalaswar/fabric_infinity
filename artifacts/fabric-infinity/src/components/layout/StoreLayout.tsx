@@ -2,6 +2,8 @@ import { ReactNode, useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useCart } from '@/contexts/CartContext';
 import { ShoppingBag, Search, Menu, X, ChevronDown, User } from 'lucide-react';
+import { ChatWidget } from '@/components/store/ChatWidget';
+import logoImg from '@assets/codex-clipboard-ba1642ba-86e7-4917-8383-f749aa153b92_1785595081553.jpg';
 
 // Full category hierarchy
 const NAV_CATEGORIES = [
