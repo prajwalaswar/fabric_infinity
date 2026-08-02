@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Fabric Infinity"
+description = "A complete e-commerce platform for Fabric Infinity — a premium Indian fabric and clothing brand. Includes a public storefront with product browsing, cart, checkout, Razorpay payment integration, and Cash on Delivery. Also includes a full owner dashboard with product management, order management, inventory tracking, analytics, and CMS features."
+version = "1.0.0"
+id = "artifacts/fabric-infinity"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19802
+
+[services.development]
+run = "pnpm --filter @workspace/fabric-infinity run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/fabric-infinity", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/fabric-infinity/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19802"
+BASE_PATH = "/"
