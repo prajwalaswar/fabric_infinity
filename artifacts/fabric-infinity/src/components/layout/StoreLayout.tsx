@@ -201,7 +201,8 @@ export function Navbar() {
           </button>
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0" onClick={() => setActiveMenu(null)}>
+          <Link href="/" className="flex items-center gap-2.5 absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0" onClick={() => setActiveMenu(null)}>
+            <img src={logoImg} alt="Fabric Infinity" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
             <div className="flex flex-col leading-none">
               <span className="font-serif text-[22px] font-semibold tracking-tight text-[hsl(220,40%,18%)]">
                 Fabric Infinity
@@ -472,6 +473,7 @@ export function StoreLayout({ children }: { children: ReactNode }) {
       <Navbar />
       <main className="flex-1 flex flex-col">{children}</main>
       <Footer />
+      <ChatWidget />
     </div>
   );
 }

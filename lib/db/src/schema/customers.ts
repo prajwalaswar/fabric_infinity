@@ -24,3 +24,16 @@ export const customerOtpsTable = pgTable("customer_otps", {
 export type Customer = typeof customersTable.$inferSelect;
 export type InsertCustomer = typeof customersTable.$inferInsert;
 export type CustomerOtp = typeof customerOtpsTable.$inferSelect;
+
+// Contact inquiries submitted via the store chat widget
+export const contactInquiriesTable = pgTable("contact_inquiries", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("new"), // new | read | replied
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type ContactInquiry = typeof contactInquiriesTable.$inferSelect;
+export type InsertContactInquiry = typeof contactInquiriesTable.$inferInsert;
