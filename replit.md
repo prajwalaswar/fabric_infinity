@@ -1,44 +1,69 @@
-# [Project name]
+# Fabric Infinity
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A premium Indian handcrafted fabrics e-commerce store featuring Ajrakh, Ikat, block prints, sarees, dress materials, and dupattas.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- **Frontend:** `pnpm --filter @workspace/fabric-infinity run dev` — runs at the `/` preview path
+- **API server:** `pnpm --filter @workspace/api-server run dev` — requires `DATABASE_URL`
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- **Required env:** `DATABASE_URL` — Postgres connection string (API server won't start without it; frontend degrades gracefully to static content)
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- pnpm workspaces, Node.js 20+, TypeScript 5.9
+- **Frontend:** React + Vite + Tailwind CSS + shadcn/ui, Cormorant Garamond + DM Sans fonts
+- **API:** Express 5, served at `/api`
+- **DB:** PostgreSQL + Drizzle ORM
+- **Validation:** Zod (`zod/v4`), `drizzle-zod`
+- **API codegen:** Orval (from OpenAPI spec in `lib/api-spec`)
+- **Payments:** Razorpay (`razorpay` package in api-server)
+- **Build:** esbuild (CJS bundle for API)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/fabric-infinity/src/` — React frontend
+  - `pages/` — store pages (Home, Shop, ProductDetail, Cart, Checkout, …) + `admin/`
+  - `components/layout/StoreLayout.tsx` — Navbar (with mega dropdown menus) + Footer
+  - `components/store/ProductCard.tsx` — product card component
+  - `index.css` — global CSS, design tokens (colors, fonts)
+- `artifacts/api-server/src/` — Express API
+  - `routes/` — REST route handlers
+  - `app.ts` — Express app setup
+- `lib/db/` — Drizzle schema + migrations (source of truth for DB schema)
+- `lib/api-spec/` — OpenAPI spec (source of truth for API contract)
+- `lib/api-client-react/` — auto-generated React Query hooks (run codegen to refresh)
+- `lib/api-zod/` — auto-generated Zod schemas
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Frontend calls API at `/api` (path-relative, works in both dev and prod via the Replit proxy)
+- When the API is unavailable, the homepage falls back to static banner images and gallery photos from `attached_assets/`
+- Full category hierarchy is hardcoded in `StoreLayout.tsx` mega menu (Fabrics → subcategories, Dress Materials, Sarees, Dupattas) — update there if categories change
+- Product cards show a "Quick Add" button on hover that adds directly to cart without visiting the product page
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+An e-commerce store for authentic Indian textiles:
+- **Fabrics:** Hand Block Prints (Ajrakh, Indigo, Dabu, Bagru, Kalamkari, …), Handloom (Ikat variants), Plain (cotton, silk), Screen Prints
+- **Dress Materials:** Jaipuri, Kota Doria, Modal Silk, Cotton Linen, Maheshwari, Cotton Print suits
+- **Sarees:** 9 varieties including Modal Silk, Chanderi, Georgette, Cotton Handblock
+- **Dupattas:** Ikkat, Banarasi, Kalamkari, Ajrakh Modal, Bandhani, Brush Print
+- Admin panel at `/admin` for managing products, categories, orders, banners
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Design should match FabricRoot.com aesthetic: premium, warm parchment tones, deep navy, serif headings, minimal rounded corners
+- Full category hierarchy must be in the nav dropdown mega menus
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- `lib/api-client-react` types are only available after running `pnpm --filter @workspace/api-spec run codegen` — typecheck will fail until the lib is built
+- The API server needs `DATABASE_URL` — without it, only the frontend preview works (with static fallback content on the homepage)
+- Use `pnpm` not `npm` or `yarn` — the preinstall script enforces this
 
 ## Pointers
 

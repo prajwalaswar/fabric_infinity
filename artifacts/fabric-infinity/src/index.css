@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -50,139 +50,73 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* LIGHT MODE */
+/* LIGHT MODE — warm parchment + deep navy */
 :root {
   --button-outline: rgba(0, 0, 0, 0.1);
   --badge-outline: rgba(0, 0, 0, 0.05);
-
   --opaque-button-border-intensity: -8; 
-
   --elevate-1: rgba(0, 0, 0, 0.03);
   --elevate-2: rgba(0, 0, 0, 0.08);
 
-  --background: 40 33% 96%;
-  --foreground: 228 35% 15%;
+  /* Warm cream background */
+  --background: 38 30% 97%;
+  --foreground: 220 30% 12%;
 
-  --border: 40 20% 85%;
-  --input: 40 20% 85%;
-  --ring: 228 40% 30%;
+  --border: 38 20% 88%;
+  --input: 38 20% 88%;
+  --ring: 220 40% 25%;
 
-  --card: 40 33% 98%;
-  --card-foreground: 228 35% 15%;
-  --card-border: 40 20% 85%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 30% 12%;
+  --card-border: 38 20% 88%;
 
-  --sidebar: 40 33% 98%;
-  --sidebar-foreground: 228 35% 15%;
-  --sidebar-border: 40 20% 85%;
-  --sidebar-primary: 228 40% 30%;
-  --sidebar-primary-foreground: 40 33% 98%;
-  --sidebar-accent: 40 20% 90%;
-  --sidebar-accent-foreground: 228 35% 15%;
-  --sidebar-ring: 228 40% 30%;
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 220 30% 12%;
+  --sidebar-border: 38 20% 88%;
+  --sidebar-primary: 220 40% 25%;
+  --sidebar-primary-foreground: 38 30% 97%;
+  --sidebar-accent: 38 20% 92%;
+  --sidebar-accent-foreground: 220 30% 12%;
+  --sidebar-ring: 220 40% 25%;
 
-  --popover: 40 33% 98%;
-  --popover-foreground: 228 35% 15%;
-  --popover-border: 40 20% 85%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 30% 12%;
+  --popover-border: 38 20% 88%;
 
-  --primary: 228 40% 30%;
-  --primary-foreground: 40 33% 98%;
+  /* Deep navy primary */
+  --primary: 220 40% 18%;
+  --primary-foreground: 38 30% 97%;
 
-  --secondary: 40 80% 50%;
-  --secondary-foreground: 228 35% 15%;
+  /* Warm gold secondary */
+  --secondary: 38 85% 50%;
+  --secondary-foreground: 220 30% 12%;
 
-  --muted: 40 20% 90%;
-  --muted-foreground: 228 15% 45%;
+  --muted: 38 20% 92%;
+  --muted-foreground: 220 15% 50%;
 
-  --accent: 15 60% 45%;
-  --accent-foreground: 40 33% 98%;
+  /* Terracotta accent */
+  --accent: 16 65% 48%;
+  --accent-foreground: 0 0% 100%;
 
   --destructive: 0 70% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --chart-1: 15 60% 45%;
-  --chart-2: 40 80% 50%;
-  --chart-3: 228 40% 30%;
-  --chart-4: 200 30% 60%;
+  --chart-1: 16 65% 48%;
+  --chart-2: 38 85% 50%;
+  --chart-3: 220 40% 25%;
+  --chart-4: 160 30% 50%;
   --chart-5: 350 40% 50%;
 
-  --app-font-sans: 'Outfit', sans-serif;
-  --app-font-serif: 'Playfair Display', serif;
+  --app-font-sans: 'DM Sans', sans-serif;
+  --app-font-serif: 'Cormorant Garamond', serif;
   --app-font-mono: Menlo, monospace;
-  --radius: 0.5rem; 
-  --shadow-2xs: 0px 2px 0px 0px hsl(var(--primary) / 0.05);
-  --shadow-xs: 0px 2px 0px 0px hsl(var(--primary) / 0.05);
-  --shadow-sm:
-    0px 2px 0px 0px hsl(var(--primary) / 0.05),
-    0px 1px 2px -1px hsl(var(--primary) / 0.05);
-  --shadow:
-    0px 2px 0px 0px hsl(var(--primary) / 0.05),
-    0px 1px 2px -1px hsl(var(--primary) / 0.05);
-  --shadow-md:
-    0px 2px 0px 0px hsl(var(--primary) / 0.05),
-    0px 2px 4px -1px hsl(var(--primary) / 0.05);
-  --shadow-lg:
-    0px 2px 0px 0px hsl(var(--primary) / 0.05),
-    0px 4px 6px -1px hsl(var(--primary) / 0.05);
-  --shadow-xl:
-    0px 2px 0px 0px hsl(var(--primary) / 0.05),
-    0px 8px 10px -1px hsl(var(--primary) / 0.05);
-  --shadow-2xl: 0px 2px 0px 0px hsl(var(--primary) / 0.05);
+  --radius: 0.25rem; 
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
-}
-
-.dark {
-  /* Enforcing light mode default since brand is warm/light */
-  --button-outline: rgba(255, 255, 255, 0.1);
-  --badge-outline: rgba(255, 255, 255, 0.05);
-  --opaque-button-border-intensity: 9; 
-  --elevate-1: rgba(255, 255, 255, 0.04);
-  --elevate-2: rgba(255, 255, 255, 0.09);
-
-  --background: 228 35% 10%;
-  --foreground: 40 33% 96%;
-
-  --border: 228 20% 20%;
-  --input: 228 20% 20%;
-  --ring: 40 80% 50%;
-
-  --card: 228 35% 12%;
-  --card-foreground: 40 33% 96%;
-  --card-border: 228 20% 20%;
-
-  --sidebar: 228 35% 12%;
-  --sidebar-foreground: 40 33% 96%;
-  --sidebar-border: 228 20% 20%;
-  --sidebar-primary: 40 80% 50%;
-  --sidebar-primary-foreground: 228 35% 10%;
-  --sidebar-accent: 228 20% 20%;
-  --sidebar-accent-foreground: 40 33% 96%;
-  --sidebar-ring: 40 80% 50%;
-
-  --popover: 228 35% 12%;
-  --popover-foreground: 40 33% 96%;
-  --popover-border: 228 20% 20%;
-
-  --primary: 40 80% 50%;
-  --primary-foreground: 228 35% 10%;
-
-  --secondary: 15 60% 45%;
-  --secondary-foreground: 40 33% 96%;
-
-  --muted: 228 20% 20%;
-  --muted-foreground: 40 20% 70%;
-
-  --accent: 228 40% 30%;
-  --accent-foreground: 40 33% 96%;
-
-  --destructive: 0 70% 50%;
-  --destructive-foreground: 0 0% 100%;
-
-  --chart-1: 15 60% 45%;
-  --chart-2: 40 80% 50%;
-  --chart-3: 228 40% 30%;
-  --chart-4: 200 30% 60%;
-  --chart-5: 350 40% 50%;
 }
 
 @layer base {
@@ -195,6 +129,30 @@
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-normal;
+    @apply font-serif;
   }
+}
+
+/* Mega menu animations */
+.mega-menu {
+  animation: fadeInDown 0.2s ease;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Carousel dot */
+.carousel-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  transition: all 0.3s;
+}
+.carousel-dot.active {
+  width: 24px;
+  border-radius: 3px;
+  background: white;
 }
