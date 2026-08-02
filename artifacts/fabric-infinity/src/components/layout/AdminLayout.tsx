@@ -19,7 +19,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
   const handleLogout = async () => {
     try {
-      await logout.mutateAsync({});
+      await logout.mutateAsync();
       setLocation('/admin/login');
     } catch (e) {
       console.error(e);

@@ -116,7 +116,7 @@ export default function OrderDetail() {
               <div className="mt-4 pt-4 border-t border-border space-y-1 text-sm">
                 <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>₹{order.subtotal?.toLocaleString('en-IN')}</span></div>
                 <div className="flex justify-between text-muted-foreground"><span>Shipping</span><span>{order.shippingCharge === 0 ? 'Free' : `₹${order.shippingCharge}`}</span></div>
-                {order.discount > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>-₹{order.discount}</span></div>}
+                {(order.discount ?? 0) > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>-₹{order.discount}</span></div>}
                 <div className="flex justify-between font-bold text-base pt-2 border-t border-border"><span>Total</span><span>₹{order.total?.toLocaleString('en-IN')}</span></div>
               </div>
             </div>

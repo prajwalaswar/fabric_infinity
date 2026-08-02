@@ -1,6 +1,6 @@
 import { StoreLayout } from '@/components/layout/StoreLayout';
 import { useParams, Link } from 'wouter';
-import { useTrackOrder } from '@workspace/api-client-react';
+import { useTrackOrder, getTrackOrderQueryKey } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, ShoppingBag, Package } from 'lucide-react';
 
@@ -8,7 +8,7 @@ export default function OrderConfirmation() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
   
   const { data: order, isLoading } = useTrackOrder(orderNumber || '', { 
-    query: { enabled: !!orderNumber } 
+    query: { queryKey: getTrackOrderQueryKey(orderNumber || ''), enabled: !!orderNumber } 
   });
 
   if (isLoading) {
@@ -87,10 +87,10 @@ export default function OrderConfirmation() {
                   <span>Shipping</span>
                   <span>{order.shippingCharge === 0 ? 'Free' : `₹${order.shippingCharge}`}</span>
                 </div>
-                {order.discount > 0 && (
+                {(order.discount ?? 0) > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount</span>
-                    <span>-₹{order.discount.toLocaleString('en-IN')}</span>
+                    <span>-₹{order.discount!.toLocaleString('en-IN')}</span>
                   </div>
                 )}
                 <div className="flex justify-between pt-4 mt-2 border-t border-border font-bold text-lg text-foreground">

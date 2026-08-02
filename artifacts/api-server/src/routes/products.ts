@@ -138,7 +138,7 @@ router.get("/products/:id", async (req, res): Promise<void> => {
   res.json(formatProduct({
     ...row.product,
     categoryName: row.categoryName ?? "",
-    averageRating: ratingRow?.avg ? parseFloat(String(ratingRow.avg)) : null,
+    averageRating: ratingRow?.avg ? parseFloat(String(ratingRow.avg)) : undefined,
     reviewCount: Number(ratingRow?.count ?? 0),
   }));
 });

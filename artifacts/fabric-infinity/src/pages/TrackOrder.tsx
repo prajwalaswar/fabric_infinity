@@ -1,6 +1,6 @@
 import { StoreLayout } from '@/components/layout/StoreLayout';
 import { useState } from 'react';
-import { useTrackOrder } from '@workspace/api-client-react';
+import { useTrackOrder, getTrackOrderQueryKey } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Package, Clock, Truck, CheckCircle2, XCircle } from 'lucide-react';
@@ -17,7 +17,7 @@ export default function TrackOrder() {
   const [searchQuery, setSearchQuery] = useState(initialRef);
 
   const { data: order, isLoading, isError, error } = useTrackOrder(searchQuery, {
-    query: { enabled: !!searchQuery, retry: false }
+    query: { queryKey: getTrackOrderQueryKey(searchQuery), enabled: !!searchQuery, retry: false }
   });
 
   const handleSearch = (e: React.FormEvent) => {
@@ -216,7 +216,7 @@ export default function TrackOrder() {
                     <div className="bg-muted/20 p-4 rounded-lg border border-border space-y-2 text-sm">
                       <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span className="font-medium">₹{order.subtotal.toLocaleString('en-IN')}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Shipping</span><span className="font-medium">{order.shippingCharge === 0 ? 'Free' : `₹${order.shippingCharge}`}</span></div>
-                      {order.discount > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span className="font-medium">-₹{order.discount.toLocaleString('en-IN')}</span></div>}
+                      {(order.discount ?? 0) > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span className="font-medium">-₹{order.discount!.toLocaleString('en-IN')}</span></div>}
                       <div className="flex justify-between pt-2 mt-2 border-t border-border font-bold text-base"><span>Total Paid</span><span>₹{order.total.toLocaleString('en-IN')}</span></div>
                     </div>
                   </div>
