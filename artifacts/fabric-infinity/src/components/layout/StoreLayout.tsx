@@ -279,7 +279,7 @@ export function Navbar() {
                 <Search size={19} />
               </button>
             )}
-            <Link href="/admin/login" onClick={() => setActiveMenu(null)} className="p-1.5 text-[hsl(220,30%,18%)] hover:text-[hsl(16,65%,48%)] transition-colors hidden md:flex" aria-label="Account">
+            <Link href="/login" onClick={() => setActiveMenu(null)} className="p-1.5 text-[hsl(220,30%,18%)] hover:text-[hsl(16,65%,48%)] transition-colors hidden md:flex" aria-label="Account">
               <User size={19} />
             </Link>
             <Link href="/cart" onClick={() => setActiveMenu(null)} className="p-1.5 text-[hsl(220,30%,18%)] hover:text-[hsl(16,65%,48%)] transition-colors relative" aria-label="Cart">

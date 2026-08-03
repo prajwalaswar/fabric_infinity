@@ -14,6 +14,7 @@ import Cart from '@/pages/Cart';
 import Checkout from '@/pages/Checkout';
 import OrderConfirmation from '@/pages/OrderConfirmation';
 import TrackOrder from '@/pages/TrackOrder';
+import Login from '@/pages/Login';
 
 // Admin Pages
 import AdminLogin from '@/pages/admin/Login';
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/checkout" component={Checkout} />
       <Route path="/order-confirmation/:orderNumber" component={OrderConfirmation} />
       <Route path="/track-order" component={TrackOrder} />
+      <Route path="/login" component={Login} />
 
       {/* Admin Auth */}
       <Route path="/admin/login" component={AdminLogin} />
