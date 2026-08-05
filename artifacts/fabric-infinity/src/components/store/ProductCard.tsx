@@ -1,10 +1,16 @@
 import { Link } from 'wouter';
 import { Product } from '@workspace/api-client-react';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Trash2 } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import type { CartItem } from '@/contexts/CartContext';
 
-export function ProductCard({ product }: { product: Product }) {
+interface ProductCardProps {
+  product: Product;
+  ownerMode?: boolean;
+  onDelete?: (productId: number) => void;
+}
+
+export function ProductCard({ product, ownerMode = false, onDelete }: ProductCardProps) {
   const discountPercent = product.offerPrice && product.price > product.offerPrice
     ? Math.round(((product.price - product.offerPrice) / product.price) * 100)
     : 0;
@@ -42,6 +48,20 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           )}
         </div>
+
+        {/* Owner Mode Delete Button */}
+        {ownerMode && onDelete && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onDelete(product.id);
+            }}
+            className="absolute top-3 right-3 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg transition-all hover:scale-110"
+            title="Delete product (Owner)"
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
 
         {/* Out of stock overlay */}
         {product.stock <= 0 && (

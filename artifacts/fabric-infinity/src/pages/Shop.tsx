@@ -1,6 +1,6 @@
 import { StoreLayout } from '@/components/layout/StoreLayout';
 import { ProductCard } from '@/components/store/ProductCard';
-import { useListProducts, useListCategories } from '@workspace/api-client-react';
+import { useListProducts, useListCategories, useAdminDeleteProduct } from '@workspace/api-client-react';
 import { useLocation, useSearch } from 'wouter';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Filter, SlidersHorizontal, ChevronRight, Search, Link } from 'lucide-react';
+import { Filter, SlidersHorizontal, ChevronRight, Search, Link, Trash2, Lock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function Shop() {
   const [searchString, setSearchString] = useSearch();
@@ -23,6 +35,12 @@ export default function Shop() {
   const searchTerm = searchParams.get('search') || '';
 
   const [localSearch, setLocalSearch] = useState(searchTerm);
+  const [ownerMode, setOwnerMode] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<number | null>(null);
+  const [deletePassword, setDeletePassword] = useState('');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: productsData, isLoading } = useListProducts({
     category: categoryParam,
@@ -32,6 +50,7 @@ export default function Shop() {
   });
 
   const { data: categories } = useListCategories();
+  const deleteProduct = useAdminDeleteProduct();
 
   const handleFilterChange = (key: string, value: string) => {
     const params = new URLSearchParams(searchString);
@@ -52,14 +71,62 @@ export default function Shop() {
     handleFilterChange('search', localSearch);
   };
 
+  const handleDeleteRequest = (productId: number) => {
+    setProductToDelete(productId);
+    setDeletePassword('');
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!productToDelete) return;
+
+    // Simple password check - in production, this should verify against backend
+    const OWNER_PASSWORD = 'owner123'; // Change this to your secure password
+    
+    if (deletePassword !== OWNER_PASSWORD) {
+      toast({ 
+        variant: 'destructive', 
+        title: 'Incorrect password', 
+        description: 'Please enter the correct owner password.' 
+      });
+      return;
+    }
+
+    try {
+      await deleteProduct.mutateAsync({ id: productToDelete });
+      toast({ title: '✓ Product deleted successfully' });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
+      setDeletePassword('');
+    } catch (error: any) {
+      toast({ 
+        variant: 'destructive', 
+        title: 'Failed to delete', 
+        description: error.message || 'Something went wrong' 
+      });
+    }
+  };
+
   return (
     <StoreLayout>
       <div className="bg-muted/30 py-8 border-b border-border">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="flex items-center text-sm text-muted-foreground mb-4">
-            <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-            <ChevronRight size={14} className="mx-2" />
-            <span className="text-foreground font-medium">Shop</span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+              <ChevronRight size={14} className="mx-2" />
+              <span className="text-foreground font-medium">Shop</span>
+            </div>
+            <Button
+              variant={ownerMode ? "destructive" : "outline"}
+              size="sm"
+              onClick={() => setOwnerMode(!ownerMode)}
+              className="gap-2"
+            >
+              <Lock size={14} />
+              {ownerMode ? 'Exit Owner Mode' : 'Owner Mode'}
+            </Button>
           </div>
           <h1 className="font-serif text-3xl md:text-5xl font-bold text-foreground">
             {categoryParam ? (
@@ -171,12 +238,58 @@ export default function Shop() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {productsData?.products.map(product => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  ownerMode={ownerMode}
+                  onDelete={handleDeleteRequest}
+                />
               ))}
             </div>
           )}
         </main>
       </div>
+
+      {/* Delete Confirmation Dialog with Password */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>🔒 Owner Authentication Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter the owner password to delete this product. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Input
+              type="password"
+              placeholder="Enter owner password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleDeleteConfirm();
+                }
+              }}
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Default password: <code className="bg-muted px-1 py-0.5 rounded">owner123</code> (change this in production!)
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDeletePassword('');
+              setProductToDelete(null);
+            }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Product
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </StoreLayout>
   );
 }
