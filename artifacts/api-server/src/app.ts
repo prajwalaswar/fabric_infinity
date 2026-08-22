@@ -43,6 +43,7 @@ app.use(cookieParser(sessionSecret));
 
 // Serve uploaded files statically
 app.use("/api/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use("/api/assets", express.static(path.resolve(process.cwd(), "../../attached_assets")));
 
 app.use("/api", router);
 

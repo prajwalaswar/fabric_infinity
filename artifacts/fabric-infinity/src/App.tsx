@@ -25,6 +25,8 @@ import AdminOrders from '@/pages/admin/Orders';
 import AdminOrderDetail from '@/pages/admin/OrderDetail';
 import AdminCategories from '@/pages/admin/Categories';
 import AdminSettings from '@/pages/admin/Settings';
+import AdminBanners from '@/pages/admin/Banners';
+import AdminCustomers from '@/pages/admin/Customers';
 
 const queryClient = new QueryClient();
 
@@ -68,6 +70,12 @@ function Router() {
       </Route>
       <Route path="/admin/settings">
         <AdminGuard><AdminSettings /></AdminGuard>
+      </Route>
+      <Route path="/admin/banners">
+        <AdminGuard><AdminBanners /></AdminGuard>
+      </Route>
+      <Route path="/admin/customers">
+        <AdminGuard><AdminCustomers /></AdminGuard>
       </Route>
 
       <Route component={NotFound} />

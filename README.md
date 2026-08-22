@@ -303,3 +303,75 @@ MIT License - Feel free to use for commercial projects
 ---
 
 **Note**: This is a monorepo managed by pnpm workspaces. Always use `pnpm` commands, not npm or yarn.
+
+## Verified audit — August 22, 2026
+
+The current Replit workflows are running:
+
+- `artifacts/fabric-infinity` — storefront/admin React application
+- `artifacts/api-server` — Express API
+
+### Verified working
+
+- Database schema push and seeded data
+- API typecheck
+- Frontend typecheck
+- Frontend production build
+- `GET /api/healthz` returns 200
+- Products, categories, banners, and coupon validation return successfully
+- COD order creation returns 201
+- Razorpay test order creation returns 201 with a real Razorpay test order ID
+- Razorpay signature-verification endpoint is implemented
+- Product images serve through `/api/assets/...`
+- Homepage preview loads with the real Fabric Infinity logo and hero banners
+- Admin password login uses `ADMIN_PASSWORD` and a signed HTTP-only cookie
+- Customer mobile/email OTP session flow is implemented
+- Admin product, order, category, banner, customer, and settings screens are routed
+
+### Payment status
+
+Razorpay is integrated in **test mode**, not live mode. The flow creates a Razorpay order on the server, opens Razorpay Checkout in the browser, and verifies the returned signature on the server. COD is implemented and tested.
+
+Before launch, replace the test credentials with live Razorpay credentials in Replit Secrets and complete a small real-payment test. Never put `RAZORPAY_KEY_SECRET` in frontend code.
+
+### Authentication status
+
+- Admin authentication is ready for internal owner access.
+- Customer sign-in supports mobile OTP and email OTP UI/session flow.
+- OTP delivery is currently demo mode: the API logs and returns `demo_otp`. This must be replaced with an SMS/email provider before public launch.
+- Google sign-in is not connected yet. The database reserves `googleId`, but a Google OAuth client, callback, and production session flow still need to be added.
+
+### Exact external information still needed
+
+1. Production Razorpay account/live credentials when ready.
+2. Real support email, business phone/WhatsApp, and store address.
+3. Final Instagram/Facebook links.
+4. Shipping charge, free-shipping threshold, delivery regions, and estimated delivery time.
+5. Shipping, returns/refunds, privacy, and terms copy.
+6. Final catalogue data: prices, stock, measurements, variants, descriptions, and approved photos.
+7. An OTP provider for Indian mobile delivery (MSG91, 2Factor, Twilio, or similar).
+8. An email provider for email OTP/order emails (Resend, SendGrid, Mailgun, or SMTP).
+9. Google OAuth web client ID/secret and development/production callback URLs if Google login is required.
+10. Optional courier aggregator and WhatsApp/email notification provider for automated fulfilment updates.
+
+### Important launch hardening remaining
+
+- Remove `demo_otp` from responses and add real SMS/email delivery.
+- Add OTP rate limiting, retry limits, and abuse protection.
+- Add transactional stock validation/decrement during order creation.
+- Add Razorpay webhooks for asynchronous payment success, refunds, and disputes.
+- Add CSRF/origin protection for cookie-authenticated mutations.
+- Add review moderation, invoice generation, and order notification emails.
+- Replace seeded sample products, coupons, reviews, and audit test orders.
+
+### Commands used for verification
+
+```bash
+pnpm --filter @workspace/db run push
+pnpm --filter @workspace/api-server run typecheck
+pnpm --filter @workspace/fabric-infinity run typecheck
+PORT=19802 BASE_PATH=/ pnpm --filter @workspace/fabric-infinity run build
+pnpm --filter @workspace/scripts run seed
+```
+
+The admin password and payment secrets are intentionally not written in this README. Use Replit Secrets and open `/admin/login`.

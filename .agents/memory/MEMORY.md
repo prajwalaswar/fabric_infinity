@@ -1,0 +1,1 @@
+- [Payment and authentication boundaries](payment-and-auth-boundaries.md) — Razorpay test flow works; OTP delivery and Google OAuth remain external setup work.

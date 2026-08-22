@@ -5,4 +5,4 @@ export * from "./reviews";
 export * from "./banners";
 export * from "./settings";
 export * from "./coupons";
-export * from "./customers"; // also exports contactInquiriesTable
+export * from "./customers";
