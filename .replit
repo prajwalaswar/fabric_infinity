@@ -26,3 +26,5 @@ channel = "stable-25_05"
 
 [userenv.shared]
 VITE_WHATSAPP_NUMBER = "918530361444"
+BREVO_SENDER_EMAIL = "prajwalaswar123@gmail.com"
+BREVO_SENDER_NAME = "Fabric_Infinity"
