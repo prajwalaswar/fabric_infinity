@@ -37,6 +37,7 @@ pnpm --filter @workspace/db run push
 | `ADMIN_PASSWORD` | Password to log in to the admin dashboard at `/admin` |
 | `RAZORPAY_KEY_ID` | Razorpay online payment — key ID |
 | `RAZORPAY_KEY_SECRET` | Razorpay online payment — key secret |
+| `BREVO_API_KEY` | Sends customer email verification OTPs through Brevo |
 
 `DATABASE_URL` is managed automatically by Replit.
 
@@ -45,6 +46,8 @@ pnpm --filter @workspace/db run push
 | Variable | Value |
 |---|---|
 | `VITE_WHATSAPP_NUMBER` | `918530361444` (WhatsApp support chat widget) |
+| `BREVO_SENDER_EMAIL` | Verified Brevo sender address |
+| `BREVO_SENDER_NAME` | `Fabric_Infinity` |
 
 ## Tech stack
 

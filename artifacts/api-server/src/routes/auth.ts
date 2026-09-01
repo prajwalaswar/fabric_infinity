@@ -1,64 +1,73 @@
 import { Router, type IRouter } from "express";
 import { db, customersTable, customerOtpsTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import crypto from "crypto";
+import { sendBrevoOtpEmail } from "../lib/brevo";
 
 const router: IRouter = Router();
 
 function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 1000000).toString();
 }
 
-// Send OTP to phone or email
-router.post("/auth/send-otp", async (req, res): Promise<void> => {
-  const { phone, email } = req.body;
+function hashOtp(otp: string): string {
+  const secret = process.env.SESSION_SECRET || "fabric-infinity-otp";
+  return crypto.createHmac("sha256", secret).update(otp).digest("hex");
+}
 
-  if (!phone && !email) {
-    res.status(400).json({ error: "Phone or email is required" });
+// Send a verification OTP by email.
+router.post("/auth/send-otp", async (req, res): Promise<void> => {
+  const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    res.status(400).json({ error: "A valid email address is required" });
     return;
   }
 
   const otp = generateOtp();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  const emailSent = await sendBrevoOtpEmail({ recipientEmail: email, otp });
+
+  if (!emailSent) {
+    req.log.error(
+      "Brevo is not configured or rejected the OTP email. Check Brevo secrets and sender verification.",
+    );
+    res.status(503).json({ error: "Email delivery is temporarily unavailable. Please try again later." });
+    return;
+  }
 
   await db.insert(customerOtpsTable).values({
-    phone: phone || null,
-    email: email || null,
-    otp,
+    phone: null,
+    email,
+    otp: hashOtp(otp),
     expiresAt,
     used: false,
   });
 
-  // In production: send SMS via Twilio or email via SendGrid
-  // For demo: return OTP in response
-  req.log.info({ otp, phone, email }, "OTP generated (demo mode — normally sent via SMS/email)");
-
   res.json({
     success: true,
-    message: phone ? `OTP sent to ${phone}` : `OTP sent to ${email}`,
-    // Demo only — remove in production:
-    demo_otp: otp,
+    message: `A verification code was sent to ${email}`,
   });
 });
 
 // Verify OTP and create session
 router.post("/auth/verify-otp", async (req, res): Promise<void> => {
-  const { phone, email, otp } = req.body;
+  const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  const otp = typeof req.body?.otp === "string" ? req.body.otp.trim() : "";
 
-  if ((!phone && !email) || !otp) {
-    res.status(400).json({ error: "Phone/email and OTP are required" });
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{6}$/.test(otp)) {
+    res.status(400).json({ error: "Email and a valid 6-digit OTP are required" });
     return;
   }
 
   const now = new Date();
-  const field = phone ? customerOtpsTable.phone : customerOtpsTable.email;
-  const value = phone || email;
+  const otpHash = hashOtp(otp);
 
   const [record] = await db
     .select()
     .from(customerOtpsTable)
-    .where(and(eq(field, value), eq(customerOtpsTable.otp, otp), eq(customerOtpsTable.used, false)))
-    .orderBy(customerOtpsTable.createdAt)
+    .where(and(eq(customerOtpsTable.email, email), eq(customerOtpsTable.otp, otpHash), eq(customerOtpsTable.used, false)))
+    .orderBy(desc(customerOtpsTable.createdAt))
     .limit(1);
 
   if (!record || record.expiresAt < now) {
@@ -70,14 +79,12 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
   await db.update(customerOtpsTable).set({ used: true }).where(eq(customerOtpsTable.id, record.id));
 
   // Find or create customer
-  let customer = phone
-    ? (await db.select().from(customersTable).where(eq(customersTable.phone, phone)).limit(1))[0]
-    : (await db.select().from(customersTable).where(eq(customersTable.email, email!)).limit(1))[0];
+  let customer = (await db.select().from(customersTable).where(eq(customersTable.email, email)).limit(1))[0];
 
   if (!customer) {
     const [newCustomer] = await db
       .insert(customersTable)
-      .values({ phone: phone || null, email: email || null, isVerified: true })
+      .values({ email, isVerified: true })
       .returning();
     customer = newCustomer;
   } else {
@@ -91,6 +98,7 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
     httpOnly: true,
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
   });
 
   res.json({
@@ -142,10 +150,14 @@ router.put("/auth/profile", async (req, res): Promise<void> => {
     return;
   }
 
-  const { name, email } = req.body;
+  const { name, email: requestedEmail } = req.body;
+  const normalizedEmail =
+    typeof requestedEmail === "string" && requestedEmail.trim()
+      ? requestedEmail.trim().toLowerCase()
+      : null;
   const [customer] = await db
     .update(customersTable)
-    .set({ name: name || null, email: email || null })
+    .set({ name: name || null, email: normalizedEmail })
     .where(eq(customersTable.id, Number(sessionId)))
     .returning();
 
