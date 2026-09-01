@@ -27,7 +27,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function Shop() {
-  const [searchString, setSearchString] = useSearch();
+  const [searchString] = useSearch();
+  const [, setLocation] = useLocation();
   const searchParams = new URLSearchParams(searchString);
   
   const categoryParam = searchParams.get('category') || '';
@@ -59,11 +60,7 @@ export default function Shop() {
     } else {
       params.delete(key);
     }
-    // Update wouter search string
-    window.history.pushState(null, '', `?${params.toString()}`);
-    // wouter doesn't have a hook to just set search, so we trigger a soft reload of the component
-    // or just let wouter catch the popstate if we dispatch it
-    window.dispatchEvent(new Event('popstate'));
+    setLocation(`/shop?${params.toString()}`);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {

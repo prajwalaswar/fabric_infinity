@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, productsTable, categoriesTable } from "@workspace/db";
-import { eq, ilike, and, desc, sql } from "drizzle-orm";
+import { eq, ilike, and, desc, sql, or } from "drizzle-orm";
 import { requireAdmin } from "../../middlewares/adminAuth";
 
 const router: IRouter = Router();
@@ -31,7 +31,20 @@ router.get("/admin/products", requireAdmin, async (req, res): Promise<void> => {
   const offset = (pageNum - 1) * limitNum;
 
   const conditions = [];
-  if (search) conditions.push(ilike(productsTable.name, `%${search}%`));
+  if (search?.trim()) {
+    const searchTerms = search.trim().split(/\s+/).filter(Boolean);
+    conditions.push(
+      ...searchTerms.map((term) => {
+        const pattern = `%${term}%`;
+        return or(
+          ilike(productsTable.name, pattern),
+          ilike(productsTable.description, pattern),
+          ilike(productsTable.fabricDetails, pattern),
+          ilike(categoriesTable.name, pattern),
+        )!;
+      }),
+    );
+  }
   if (category) {
     const [cat] = await db.select().from(categoriesTable).where(eq(categoriesTable.slug, category)).limit(1);
     if (cat) conditions.push(eq(productsTable.categoryId, cat.id));

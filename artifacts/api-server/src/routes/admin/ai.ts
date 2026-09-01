@@ -4,8 +4,10 @@ import { eq } from "drizzle-orm";
 import { requireAdmin } from "../../middlewares/adminAuth";
 import fs from "fs";
 import path from "path";
+import { ObjectNotFoundError, ObjectStorageService } from "../../lib/objectStorage";
 
 const router: IRouter = Router();
+const objectStorageService = new ObjectStorageService();
 
 async function getGroqApiKey(): Promise<string | null> {
   const rows = await db
@@ -18,7 +20,7 @@ async function getGroqApiKey(): Promise<string | null> {
 
 /**
  * POST /api/admin/ai/analyze-fabric
- * Body: { imageUrl: string }  (e.g. "/api/uploads/xxx.jpg")
+ * Body: { imageUrl: string }  (e.g. "/api/storage/objects/uploads/xxx")
  * Returns: { name, description, fabricDetails, suggestedPrice, suggestedOfferPrice, category }
  */
 router.post(
@@ -41,35 +43,54 @@ router.post(
       return;
     }
 
-    // Resolve image to base64 data URL
+    // Resolve the image to a base64 data URL. New uploads live in App Storage;
+    // the local branch is kept only so older products can still be analyzed.
     let imageDataUrl: string;
     try {
-      // URL pattern: /api/uploads/<filename>
-      const uploadsPrefix = "/api/uploads/";
-      if (!imageUrl.startsWith(uploadsPrefix)) {
-        res
-          .status(400)
-          .json({ error: "Only locally uploaded images are supported" });
-        return;
+      let fileBuffer: Buffer;
+      let mimeType = "image/jpeg";
+
+      const storagePrefix = "/api/storage/objects";
+      if (imageUrl.startsWith(`${storagePrefix}/`)) {
+        const objectPath = imageUrl.slice("/api/storage".length);
+        const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+        [fileBuffer] = await objectFile.download();
+        const [metadata] = await objectFile.getMetadata();
+        mimeType = metadata.contentType || mimeType;
+      } else {
+        const uploadsPrefix = "/api/uploads/";
+        if (!imageUrl.startsWith(uploadsPrefix)) {
+          res.status(400).json({
+            error: "Please upload the image in the owner dashboard before analyzing it",
+          });
+          return;
+        }
+        const filename = imageUrl.slice(uploadsPrefix.length);
+        const filePath = path.join(process.cwd(), "uploads", filename);
+        fileBuffer = fs.readFileSync(filePath);
+        const ext = path.extname(filename).toLowerCase().slice(1);
+        mimeType =
+          ext === "jpg" || ext === "jpeg"
+            ? "image/jpeg"
+            : ext === "png"
+              ? "image/png"
+              : ext === "webp"
+                ? "image/webp"
+                : mimeType;
       }
-      const filename = imageUrl.slice(uploadsPrefix.length);
-      const filePath = path.join(process.cwd(), "uploads", filename);
-      const fileBuffer = fs.readFileSync(filePath);
-      const ext = path.extname(filename).toLowerCase().slice(1);
-      const mimeType =
-        ext === "jpg" || ext === "jpeg"
-          ? "image/jpeg"
-          : ext === "png"
-            ? "image/png"
-            : ext === "webp"
-              ? "image/webp"
-              : "image/jpeg";
+
       imageDataUrl = `data:${mimeType};base64,${fileBuffer.toString("base64")}`;
     } catch (err) {
       req.log.error({ err }, "Failed to read uploaded image");
+      if (err instanceof ObjectNotFoundError) {
+        res.status(400).json({
+          error: "The uploaded image could not be found. Please upload it again.",
+        });
+        return;
+      }
       res
         .status(400)
-        .json({ error: "Could not read image file. Make sure it was uploaded." });
+        .json({ error: "Could not read image file. Please upload it again." });
       return;
     }
 

@@ -297,6 +297,9 @@ export default function ProductForm() {
                 <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} data-testid="input-image-upload" />
               </label>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Images are saved to shared cloud storage, so they stay available on the website from every phone and laptop.
+            </p>
           </div>
 
           {/* Basic Information */}

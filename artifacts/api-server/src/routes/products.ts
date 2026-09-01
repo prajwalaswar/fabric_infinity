@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, and, gte, lte, desc, asc, sql } from "drizzle-orm";
+import { eq, ilike, and, gte, lte, desc, asc, sql, or } from "drizzle-orm";
 import { db, productsTable, categoriesTable, reviewsTable } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -37,13 +37,30 @@ router.get("/products", async (req, res): Promise<void> => {
 
   const conditions = [eq(productsTable.isActive, true)];
 
-  if (category) {
+  if (category && category !== "new-arrivals" && category !== "bestsellers") {
     const cat = await db.select().from(categoriesTable).where(eq(categoriesTable.slug, category)).limit(1);
     if (cat[0]) conditions.push(eq(productsTable.categoryId, cat[0].id));
   }
-  if (search) conditions.push(ilike(productsTable.name, `%${search}%`));
-  if (priceMin) conditions.push(gte(productsTable.price, priceMin));
-  if (priceMax) conditions.push(lte(productsTable.price, priceMax));
+  if (category === "new-arrivals") conditions.push(eq(productsTable.isNewArrival, true));
+  if (category === "bestsellers") conditions.push(eq(productsTable.isBestseller, true));
+  if (search?.trim()) {
+    // Match each entered word against the product name, description, fabric
+    // details, or category so searches behave like a real store catalog.
+    const searchTerms = search.trim().split(/\s+/).filter(Boolean);
+    conditions.push(
+      ...searchTerms.map((term) => {
+        const pattern = `%${term}%`;
+        return or(
+          ilike(productsTable.name, pattern),
+          ilike(productsTable.description, pattern),
+          ilike(productsTable.fabricDetails, pattern),
+          ilike(categoriesTable.name, pattern),
+        )!;
+      }),
+    );
+  }
+  if (priceMin) conditions.push(gte(productsTable.price, String(priceMin)));
+  if (priceMax) conditions.push(lte(productsTable.price, String(priceMax)));
   if (featured === "true") conditions.push(eq(productsTable.isFeatured, true));
   if (bestseller === "true") conditions.push(eq(productsTable.isBestseller, true));
   if (newArrival === "true") conditions.push(eq(productsTable.isNewArrival, true));
@@ -66,7 +83,10 @@ router.get("/products", async (req, res): Promise<void> => {
       .orderBy(orderBy)
       .limit(limitNum)
       .offset(offset),
-    db.select({ count: sql<number>`count(*)` }).from(productsTable).where(where),
+    db.select({ count: sql<number>`count(*)` })
+      .from(productsTable)
+      .leftJoin(categoriesTable, eq(productsTable.categoryId, categoriesTable.id))
+      .where(where),
   ]);
 
   const total = Number(countResult[0]?.count ?? 0);

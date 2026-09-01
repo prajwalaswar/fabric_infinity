@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Plus, Edit, Trash2, Save, X, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { uploadAdminImage } from '@/lib/upload';
 
 export default function AdminCategories() {
   const { data: categories, isLoading } = useAdminListCategories();
@@ -68,16 +69,11 @@ export default function AdminCategories() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const body = new FormData();
-    body.append('file', file);
-
     try {
-      const res = await fetch('/api/admin/upload', { method: 'POST', body });
-      if (!res.ok) throw new Error("Upload failed");
-      const data = await res.json();
-      setFormData(prev => ({ ...prev, image: data.url }));
+      const imageUrl = await uploadAdminImage(file);
+      setFormData(prev => ({ ...prev, image: imageUrl }));
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Upload failed" });
+      toast({ variant: "destructive", title: "Upload failed", description: err instanceof Error ? err.message : "Please try again." });
     }
   };
 
