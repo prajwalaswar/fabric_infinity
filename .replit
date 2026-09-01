@@ -3,6 +3,8 @@ modules = ["nodejs-20", "web"]
 [deployment]
 router = "application"
 deploymentTarget = "autoscale"
+build = ["pnpm", "run", "build"]
+run = ["pnpm", "--filter", "@workspace/api-server", "run", "start"]
 
 [deployment.postBuild]
 args = ["pnpm", "store", "prune"]

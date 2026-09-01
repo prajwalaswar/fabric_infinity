@@ -23,6 +23,8 @@ Both services start automatically via their configured workflows:
 - **Storefront** (`Fabric Infinity Storefront`): `PORT=19802 BASE_PATH=/ pnpm --filter @workspace/fabric-infinity run dev`
 - **API server** (`Fabric Infinity API`): `PORT=8080 pnpm --filter @workspace/api-server run dev`
 
+For publishing, the root deployment builds the workspace and runs the API server, which serves both `/api/*` and the built storefront from one public URL.
+
 After merging or reinstalling dependencies, run the DB schema push:
 
 ```sh
