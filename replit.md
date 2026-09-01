@@ -49,6 +49,14 @@ pnpm --filter @workspace/db run push
 | `BREVO_SENDER_EMAIL` | Verified Brevo sender address |
 | `BREVO_SENDER_NAME` | `Fabric_Infinity` |
 
+## Owner dashboard and image storage
+
+- The owner dashboard is available from the dashboard icon in the storefront header or at `/admin/login`.
+- The owner signs in with the `ADMIN_PASSWORD` secret. The session is cookie-based and upload URLs are owner-only.
+- New product and banner images upload directly to Replit App Storage, not to MongoDB or a local computer.
+- PostgreSQL stores the product/banner metadata and the persistent `/api/storage/objects/...` image URL.
+- The legacy `/api/uploads` route remains available only for older images that were already saved on local disk.
+
 ## Tech stack
 
 - **Frontend**: React 18, Vite, Tailwind CSS, shadcn/ui, Framer Motion, TanStack Query, Wouter

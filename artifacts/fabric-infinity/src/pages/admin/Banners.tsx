@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { uploadAdminImage } from '@/lib/upload';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Plus, Edit, Trash2, Save, X, Upload, Loader2 } from 'lucide-react';
@@ -52,12 +53,8 @@ export default function AdminBanners() {
     if (!file) return;
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch('/api/admin/upload', { method: 'POST', body: fd, credentials: 'include' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setForm(p => ({ ...p, image: data.url }));
+      const imageUrl = await uploadAdminImage(file);
+      setForm(p => ({ ...p, image: imageUrl }));
     } catch (err: unknown) {
       toast({ variant: 'destructive', title: 'Upload failed', description: err instanceof Error ? err.message : 'Unknown error' });
     } finally {

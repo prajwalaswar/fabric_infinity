@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Upload, X, Loader2, Sparkles, Wand2 } from 'lucide-react';
 import { Link } from 'wouter';
+import { uploadAdminImage } from '@/lib/upload';
 
 interface ProductFormState {
   name: string;
@@ -102,13 +103,9 @@ export default function ProductForm() {
     if (!file) return;
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch('/api/admin/upload', { method: 'POST', body: fd, credentials: 'include' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setForm(prev => ({ ...prev, images: [...prev.images, data.url] }));
-      setLastUploadedImage(data.url);
+      const imageUrl = await uploadAdminImage(file);
+      setForm(prev => ({ ...prev, images: [...prev.images, imageUrl] }));
+      setLastUploadedImage(imageUrl);
     } catch (err: unknown) {
       toast({ variant: 'destructive', title: 'Upload failed', description: err instanceof Error ? err.message : 'Unknown error' });
     } finally {

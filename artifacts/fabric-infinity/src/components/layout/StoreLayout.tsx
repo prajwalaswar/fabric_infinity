@@ -1,7 +1,7 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useCart } from '@/contexts/CartContext';
-import { ShoppingBag, Search, Menu, X, ChevronDown, User, MapPin } from 'lucide-react';
+import { ShoppingBag, Search, Menu, X, ChevronDown, User, MapPin, LayoutDashboard } from 'lucide-react';
 import { ChatWidget } from '@/components/store/ChatWidget';
 import logoImg from '@assets/codex-clipboard-ba1642ba-86e7-4917-8383-f749aa153b92_1785595081553.jpg';
 
@@ -281,6 +281,9 @@ export function Navbar() {
             )}
             <Link href="/login" onClick={() => setActiveMenu(null)} className="p-1.5 text-[hsl(220,30%,18%)] hover:text-[hsl(16,65%,48%)] transition-colors hidden md:flex" aria-label="Account">
               <User size={19} />
+            </Link>
+            <Link href="/admin/login" onClick={() => setActiveMenu(null)} className="p-1.5 text-[hsl(220,30%,18%)] hover:text-[hsl(16,65%,48%)] transition-colors" aria-label="Owner dashboard" title="Owner dashboard">
+              <LayoutDashboard size={19} />
             </Link>
             <Link href="/cart" onClick={() => setActiveMenu(null)} className="p-1.5 text-[hsl(220,30%,18%)] hover:text-[hsl(16,65%,48%)] transition-colors relative" aria-label="Cart">
               <ShoppingBag size={19} />

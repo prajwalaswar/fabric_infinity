@@ -23,6 +23,7 @@ router.post("/admin/auth/login", async (req, res): Promise<void> => {
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24h
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
   });
 
   res.json({ authenticated: true });
