@@ -20,8 +20,8 @@ lib/
 
 Both services start automatically via their configured workflows:
 
-- **Storefront** (`artifacts/fabric-infinity: web`): `pnpm --filter @workspace/fabric-infinity run dev`
-- **API server** (`artifacts/api-server: API Server`): `pnpm --filter @workspace/api-server run dev`
+- **Storefront** (`Fabric Infinity Storefront`): `PORT=19802 BASE_PATH=/ pnpm --filter @workspace/fabric-infinity run dev`
+- **API server** (`Fabric Infinity API`): `PORT=8080 pnpm --filter @workspace/api-server run dev`
 
 After merging or reinstalling dependencies, run the DB schema push:
 
@@ -56,6 +56,7 @@ pnpm --filter @workspace/db run push
 - New product and banner images upload directly to Replit App Storage, not to MongoDB or a local computer.
 - PostgreSQL stores the product/banner metadata and the persistent `/api/storage/objects/...` image URL.
 - The legacy `/api/uploads` route remains available only for older images that were already saved on local disk.
+- Storefront search matches every entered word against product names, descriptions, fabric details, and category names.
 
 ## Tech stack
 
