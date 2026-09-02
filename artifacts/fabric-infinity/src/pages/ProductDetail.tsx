@@ -8,6 +8,10 @@ import { useToast } from '@/components/ui/use-toast';
 import { Minus, Plus, ChevronRight, Star, Truck, RefreshCcw, ShieldCheck } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+function categorySlug(name: string) {
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const productId = parseInt(id, 10);
@@ -83,7 +87,7 @@ export default function ProductDetail() {
           <ChevronRight size={14} className="mx-2 flex-shrink-0" />
           <Link href="/shop" className="hover:text-primary transition-colors">Shop</Link>
           <ChevronRight size={14} className="mx-2 flex-shrink-0" />
-          <Link href={`/shop?category=${product.categoryId}`} className="hover:text-primary transition-colors">{product.categoryName}</Link>
+          <Link href={`/shop?category=${categorySlug(product.categoryName)}`} className="hover:text-primary transition-colors">{product.categoryName}</Link>
           <ChevronRight size={14} className="mx-2 flex-shrink-0" />
           <span className="text-foreground font-medium">{product.name}</span>
         </div>

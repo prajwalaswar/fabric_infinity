@@ -98,12 +98,16 @@ export default function AdminSettings() {
     }
     setSavingGroq(true);
     try {
-      await fetch('/api/admin/settings', {
+      const response = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ groqApiKey: groqApiKey.trim() }),
       });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || 'The Groq API key could not be saved');
+      }
       setGroqKeySet(true);
       setGroqApiKey('');
       setShowGroqKey(false);
@@ -118,12 +122,16 @@ export default function AdminSettings() {
   const handleRemoveGroqKey = async () => {
     setSavingGroq(true);
     try {
-      await fetch('/api/admin/settings', {
+      const response = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ groqApiKey: '' }),
       });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || 'The Groq API key could not be removed');
+      }
       setGroqKeySet(false);
       setGroqApiKey('');
       toast({ title: 'Groq API key removed' });

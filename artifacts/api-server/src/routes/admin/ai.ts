@@ -8,6 +8,7 @@ import { ObjectNotFoundError, ObjectStorageService } from "../../lib/objectStora
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
+const GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
 
 async function getGroqApiKey(): Promise<string | null> {
   const rows = await db
@@ -119,7 +120,7 @@ Only return valid JSON — no markdown, no explanation, no code blocks.`;
             Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            model: "llama-3.2-11b-vision-preview",
+            model: GROQ_VISION_MODEL,
             messages: [
               {
                 role: "user",

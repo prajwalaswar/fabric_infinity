@@ -1,5 +1,6 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
+import { getListProductsQueryKey, useListProducts } from '@workspace/api-client-react';
 import { useCart } from '@/contexts/CartContext';
 import { ShoppingBag, Search, Menu, X, ChevronDown, User, MapPin, LayoutDashboard } from 'lucide-react';
 import { ChatWidget } from '@/components/store/ChatWidget';
@@ -160,6 +161,7 @@ function MegaMenuPanel({ groups, onClose }: { groups: NonNullable<typeof NAV_CAT
 
 export function Navbar() {
   const { cartCount } = useCart();
+  const [, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -167,6 +169,30 @@ export function Navbar() {
   // Active mega-menu managed at header level so the panel spans full width
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const headerRef = useRef<HTMLElement>(null);
+  const trimmedSearchQuery = searchQuery.trim();
+  const showSearchResults =
+    (searchOpen || mobileMenuOpen) && trimmedSearchQuery.length >= 2;
+  const liveSearchParams = {
+    search: trimmedSearchQuery,
+    limit: 5,
+    sort: "newest" as const,
+  };
+  const { data: searchResults, isFetching: isSearching } = useListProducts(
+    liveSearchParams,
+    {
+      query: {
+        queryKey: getListProductsQueryKey(liveSearchParams),
+        enabled: showSearchResults,
+      },
+    },
+  );
+
+  const submitSearch = () => {
+    if (!trimmedSearchQuery) return;
+    setLocation(`/shop?search=${encodeURIComponent(trimmedSearchQuery)}`);
+    setSearchOpen(false);
+    setMobileMenuOpen(false);
+  };
 
   // Close on outside click
   useEffect(() => {
@@ -251,16 +277,14 @@ export function Navbar() {
           {/* Actions */}
           <div className="flex items-center gap-3">
             {searchOpen ? (
-              <div className="hidden md:flex items-center border border-[#e8e0d6] overflow-hidden">
+              <div className="relative hidden md:flex items-center border border-[#e8e0d6] overflow-visible">
                 <input
                   autoFocus
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && searchQuery.trim()) {
-                      window.location.href = `/shop?search=${encodeURIComponent(searchQuery.trim())}`;
-                    }
+                    if (e.key === 'Enter') submitSearch();
                     if (e.key === 'Escape') setSearchOpen(false);
                   }}
                   placeholder="Search fabrics…"
@@ -269,6 +293,14 @@ export function Navbar() {
                 <button onClick={() => setSearchOpen(false)} className="px-2 text-[hsl(220,15%,50%)] hover:text-[hsl(16,65%,48%)]">
                   <X size={14} />
                 </button>
+                {showSearchResults && (
+                  <SearchResultsDropdown
+                    results={searchResults?.products ?? []}
+                    isSearching={isSearching}
+                    onViewAll={submitSearch}
+                    onClose={() => setSearchOpen(false)}
+                  />
+                )}
               </div>
             ) : (
               <button
@@ -357,27 +389,101 @@ export function Navbar() {
               </div>
             ))}
             {/* Mobile search */}
-            <div className="px-6 py-5">
+            <div className="relative px-6 py-5">
               <div className="flex items-center border border-[#e8e0d6] px-3 py-2.5">
                 <Search size={15} className="text-[#8a7968] mr-2" />
                 <input
                   type="text"
                   placeholder="Search fabrics…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="text-sm w-full outline-none bg-transparent text-[hsl(220,30%,18%)]"
                   onKeyDown={(e) => {
-                    const target = e.target as HTMLInputElement;
-                    if (e.key === 'Enter' && target.value.trim()) {
-                      window.location.href = `/shop?search=${encodeURIComponent(target.value.trim())}`;
-                      setMobileMenuOpen(false);
-                    }
+                    if (e.key === 'Enter') submitSearch();
                   }}
                 />
               </div>
+              {showSearchResults && (
+                <SearchResultsDropdown
+                  results={searchResults?.products ?? []}
+                  isSearching={isSearching}
+                  onViewAll={submitSearch}
+                  onClose={() => setMobileMenuOpen(false)}
+                />
+              )}
             </div>
           </div>
         </div>
       )}
     </header>
+  );
+}
+
+function SearchResultsDropdown({
+  results,
+  isSearching,
+  onViewAll,
+  onClose,
+}: {
+  results: Array<{ id: number; name: string; price: number; offerPrice?: number | null; images?: string[] }>;
+  isSearching: boolean;
+  onViewAll: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white border border-[#e8e0d6] shadow-xl z-[60]">
+      {isSearching ? (
+        <p className="px-4 py-4 text-sm text-[#8a7968]">Searching products…</p>
+      ) : results.length > 0 ? (
+        <>
+          <div className="px-4 py-2.5 border-b border-[#f0ebe3] text-[10px] uppercase tracking-[0.15em] text-[#8a7968]">
+            Matching products
+          </div>
+          <div className="divide-y divide-[#f0ebe3]">
+            {results.map((product) => (
+              <Link
+                key={product.id}
+                href={`/product/${product.id}`}
+                onClick={onClose}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-[#faf8f4] transition-colors"
+              >
+                <div className="w-11 h-11 flex-shrink-0 bg-[#f5f1ec] overflow-hidden">
+                  {product.images?.[0] ? (
+                    <img src={product.images[0]} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[hsl(220,30%,18%)] truncate">{product.name}</p>
+                  <p className="text-xs text-[#8a7968]">
+                    ₹{(product.offerPrice ?? product.price).toLocaleString("en-IN")}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={onViewAll}
+            className="w-full px-4 py-3 text-left text-[11px] uppercase tracking-[0.15em] font-semibold text-[hsl(16,65%,48%)] hover:bg-[#faf8f4] border-t border-[#f0ebe3]"
+          >
+            View all search results →
+          </button>
+        </>
+      ) : (
+        <div className="px-4 py-4">
+          <p className="text-sm text-[hsl(220,30%,18%)]">No matching products</p>
+          <button
+            type="button"
+            onClick={onViewAll}
+            className="mt-2 text-[11px] uppercase tracking-[0.15em] font-semibold text-[hsl(16,65%,48%)]"
+          >
+            Search full catalog →
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

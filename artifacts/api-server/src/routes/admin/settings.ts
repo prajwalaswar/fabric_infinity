@@ -26,6 +26,12 @@ async function getAllSettings() {
   for (const row of rows) {
     if (SETTING_KEYS.includes(row.key)) {
       const val = row.value;
+      if (row.key === "groqApiKey") {
+        // The AI route reads the key server-side; never return the credential
+        // to the browser. The settings screen only needs to know if it exists.
+        result[row.key] = val ? "configured" : "";
+        continue;
+      }
       if (val === "true") result[row.key] = true;
       else if (val === "false") result[row.key] = false;
       else if (!isNaN(Number(val)) && val !== null && val !== "") result[row.key] = Number(val);
