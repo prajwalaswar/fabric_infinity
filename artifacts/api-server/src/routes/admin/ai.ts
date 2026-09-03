@@ -8,7 +8,9 @@ import { ObjectNotFoundError, ObjectStorageService } from "../../lib/objectStora
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
-const GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+// Groq's currently supported multimodal production model. The previously used
+// Llama 4 Scout model was retired, which caused Groq to return HTTP 404.
+const GROQ_VISION_MODEL = "qwen/qwen3.6-27b";
 
 async function getGroqApiKey(): Promise<string | null> {
   const rows = await db
@@ -149,7 +151,8 @@ Only return valid JSON — no markdown, no explanation, no code blocks.`;
               },
             ],
             temperature: 0.3,
-            max_tokens: 512,
+            max_completion_tokens: 1024,
+            response_format: { type: "json_object" },
           }),
         },
       );
@@ -162,6 +165,11 @@ Only return valid JSON — no markdown, no explanation, no code blocks.`;
           res.status(400).json({
             error:
               "Invalid Groq API key. Please update it in Settings → AI Integration.",
+          });
+        } else if (groqRes.status === 404) {
+          res.status(502).json({
+            error:
+              "The configured Groq vision model is unavailable. Please try again after the server is updated.",
           });
         } else if (groqRes.status === 429) {
           res.status(429).json({
