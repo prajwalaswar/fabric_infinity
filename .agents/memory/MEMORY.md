@@ -1,1 +1,2 @@
 - [Payment and authentication boundaries](payment-and-auth-boundaries.md) — Razorpay test flow works; OTP delivery and Google OAuth remain external setup work.
+- [Imported artifact workflows](imported-project-workflows.md) — imported artifacts may register managed workflows after setup; avoid retaining temporary duplicate workflows.
