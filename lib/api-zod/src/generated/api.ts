@@ -9,6 +9,21 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Public store information and payment availability
+ */
+export const GetStoreInfoResponse = zod.object({
+  "storeName": zod.string(),
+  "announcementBar": zod.string(),
+  "whatsappNumber": zod.string(),
+  "razorpayEnabled": zod.boolean(),
+  "codEnabled": zod.boolean(),
+  "razorpayConfigured": zod.boolean(),
+  "freeShippingThreshold": zod.number(),
+  "standardShippingCharge": zod.number()
+})
+
+
+/**
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -1068,7 +1083,9 @@ export const GetSettingsResponse = zod.object({
   "whatsappNumber": zod.string().optional(),
   "metaTitle": zod.string().optional(),
   "metaDescription": zod.string().optional(),
-  "announcementBar": zod.string().optional()
+  "announcementBar": zod.string().optional(),
+  "razorpayKeyId": zod.string().optional(),
+  "razorpayKeySecret": zod.string().optional()
 })
 
 
@@ -1090,7 +1107,9 @@ export const UpdateSettingsBody = zod.object({
   "whatsappNumber": zod.string().optional(),
   "metaTitle": zod.string().optional(),
   "metaDescription": zod.string().optional(),
-  "announcementBar": zod.string().optional()
+  "announcementBar": zod.string().optional(),
+  "razorpayKeyId": zod.string().optional(),
+  "razorpayKeySecret": zod.string().optional()
 })
 
 export const UpdateSettingsResponse = zod.object({
@@ -1108,7 +1127,9 @@ export const UpdateSettingsResponse = zod.object({
   "whatsappNumber": zod.string().optional(),
   "metaTitle": zod.string().optional(),
   "metaDescription": zod.string().optional(),
-  "announcementBar": zod.string().optional()
+  "announcementBar": zod.string().optional(),
+  "razorpayKeyId": zod.string().optional(),
+  "razorpayKeySecret": zod.string().optional()
 })
 
 

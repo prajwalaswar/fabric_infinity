@@ -61,6 +61,7 @@ import type {
   SalesChartPoint,
   SiteSettings,
   SiteSettingsUpdate,
+  StoreInfo,
   SuccessResponse,
   TopProduct,
   UploadUrlRequest,
@@ -93,6 +94,83 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetStoreInfoUrl = () => {
+
+
+
+
+  return `/api/store-info`
+}
+
+/**
+ * @summary Public store information and payment availability
+ */
+export const getStoreInfo = async ( options?: Parameters<typeof customFetch>[1]): Promise<StoreInfo> => {
+
+  return customFetch<StoreInfo>(getGetStoreInfoUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStoreInfoQueryKey = () => {
+    return [
+    `/api/store-info`
+    ] as const;
+    }
+
+
+export const getGetStoreInfoQueryOptions = <TData = Awaited<ReturnType<typeof getStoreInfo>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStoreInfo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreInfoQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreInfo>>> = ({ signal }) => getStoreInfo({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoreInfo>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStoreInfoQueryResult = NonNullable<Awaited<ReturnType<typeof getStoreInfo>>>
+export type GetStoreInfoQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Public store information and payment availability
+ */
+
+export function useGetStoreInfo<TData = Awaited<ReturnType<typeof getStoreInfo>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStoreInfo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStoreInfoQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getHealthCheckUrl = () => {
 

@@ -16,22 +16,28 @@ async function getGroqApiKey(): Promise<string | null> {
     .from(settingsTable)
     .where(eq(settingsTable.key, "groqApiKey"))
     .limit(1);
-  return rows[0]?.value ?? null;
+  return rows[0]?.value ?? process.env.GROQ_API_KEY ?? null;
 }
 
 /**
  * POST /api/admin/ai/analyze-fabric
- * Body: { imageUrl: string }  (e.g. "/api/storage/objects/uploads/xxx")
+ * Body: { imageDataUrl?: string, imageUrl?: string }
+ *  - imageDataUrl: a base64 data URL sent straight from the browser (preferred —
+ *    works no matter where the image is stored)
+ *  - imageUrl: a stored image path (e.g. "/api/storage/objects/uploads/xxx")
  * Returns: { name, description, fabricDetails, suggestedPrice, suggestedOfferPrice, category }
  */
 router.post(
   "/admin/ai/analyze-fabric",
   requireAdmin,
   async (req, res): Promise<void> => {
-    const { imageUrl } = req.body as { imageUrl?: string };
+    const { imageUrl, imageDataUrl } = req.body as {
+      imageUrl?: string;
+      imageDataUrl?: string;
+    };
 
-    if (!imageUrl) {
-      res.status(400).json({ error: "imageUrl is required" });
+    if (!imageDataUrl && !imageUrl) {
+      res.status(400).json({ error: "imageDataUrl or imageUrl is required" });
       return;
     }
 
@@ -44,55 +50,61 @@ router.post(
       return;
     }
 
-    // Resolve the image to a base64 data URL. New uploads live in App Storage;
-    // the local branch is kept only so older products can still be analyzed.
-    let imageDataUrl: string;
-    try {
-      let fileBuffer: Buffer;
-      let mimeType = "image/jpeg";
+    // Resolve the image to a base64 data URL. The browser may send the raw image
+// as a data URL (preferred — works regardless of where files are stored);
+// otherwise we read a stored image from App Storage or the local uploads dir
+// (kept so older products can still be analyzed).
+    let dataUrl: string;
+    if (imageDataUrl) {
+      dataUrl = imageDataUrl;
+    } else {
+      try {
+        let fileBuffer: Buffer;
+        let mimeType = "image/jpeg";
 
-      const storagePrefix = "/api/storage/objects";
-      if (imageUrl.startsWith(`${storagePrefix}/`)) {
-        const objectPath = imageUrl.slice("/api/storage".length);
-        const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
-        [fileBuffer] = await objectFile.download();
-        const [metadata] = await objectFile.getMetadata();
-        mimeType = metadata.contentType || mimeType;
-      } else {
-        const uploadsPrefix = "/api/uploads/";
-        if (!imageUrl.startsWith(uploadsPrefix)) {
+        const storagePrefix = "/api/storage/objects";
+        if (imageUrl!.startsWith(`${storagePrefix}/`)) {
+          const objectPath = imageUrl!.slice("/api/storage".length);
+          const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+          [fileBuffer] = await objectFile.download();
+          const [metadata] = await objectFile.getMetadata();
+          mimeType = metadata.contentType || mimeType;
+        } else {
+          const uploadsPrefix = "/api/uploads/";
+          if (!imageUrl!.startsWith(uploadsPrefix)) {
+            res.status(400).json({
+              error: "Please upload the image in the owner dashboard before analyzing it",
+            });
+            return;
+          }
+          const filename = imageUrl!.slice(uploadsPrefix.length);
+          const filePath = path.join(process.cwd(), "uploads", filename);
+          fileBuffer = fs.readFileSync(filePath);
+          const ext = path.extname(filename).toLowerCase().slice(1);
+          mimeType =
+            ext === "jpg" || ext === "jpeg"
+              ? "image/jpeg"
+              : ext === "png"
+                ? "image/png"
+                : ext === "webp"
+                  ? "image/webp"
+                  : mimeType;
+        }
+
+        dataUrl = `data:${mimeType};base64,${fileBuffer.toString("base64")}`;
+      } catch (err) {
+        req.log.error({ err }, "Failed to read uploaded image");
+        if (err instanceof ObjectNotFoundError) {
           res.status(400).json({
-            error: "Please upload the image in the owner dashboard before analyzing it",
+            error: "The uploaded image could not be found. Please upload it again.",
           });
           return;
         }
-        const filename = imageUrl.slice(uploadsPrefix.length);
-        const filePath = path.join(process.cwd(), "uploads", filename);
-        fileBuffer = fs.readFileSync(filePath);
-        const ext = path.extname(filename).toLowerCase().slice(1);
-        mimeType =
-          ext === "jpg" || ext === "jpeg"
-            ? "image/jpeg"
-            : ext === "png"
-              ? "image/png"
-              : ext === "webp"
-                ? "image/webp"
-                : mimeType;
-      }
-
-      imageDataUrl = `data:${mimeType};base64,${fileBuffer.toString("base64")}`;
-    } catch (err) {
-      req.log.error({ err }, "Failed to read uploaded image");
-      if (err instanceof ObjectNotFoundError) {
-        res.status(400).json({
-          error: "The uploaded image could not be found. Please upload it again.",
-        });
+        res
+          .status(400)
+          .json({ error: "Could not read image file. Please upload it again." });
         return;
       }
-      res
-        .status(400)
-        .json({ error: "Could not read image file. Please upload it again." });
-      return;
     }
 
     // Call Groq vision API
@@ -127,7 +139,7 @@ Only return valid JSON — no markdown, no explanation, no code blocks.`;
                 content: [
                   {
                     type: "image_url",
-                    image_url: { url: imageDataUrl },
+                    image_url: { url: dataUrl },
                   },
                   {
                     type: "text",

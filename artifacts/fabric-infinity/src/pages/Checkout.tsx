@@ -9,6 +9,7 @@ import {
   useCreateOrder, 
   useValidateCoupon,
   useVerifyRazorpayPayment,
+  useGetStoreInfo,
   OrderInputPaymentMethod 
 } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ export default function Checkout() {
   const createOrder = useCreateOrder();
   const validateCoupon = useValidateCoupon();
   const verifyPayment = useVerifyRazorpayPayment();
+  const { data: storeInfo } = useGetStoreInfo();
 
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -60,6 +62,22 @@ export default function Checkout() {
       notes: '',
     },
   });
+
+  // Payment availability comes from the store settings the owner configures
+  // in the dashboard. Razorpay only counts when both keys are saved.
+  const razorpayAvailable = Boolean(storeInfo?.razorpayEnabled && storeInfo?.razorpayConfigured);
+  const codAvailable = storeInfo ? storeInfo.codEnabled !== false : true;
+
+  // Default to the best available payment method once store info loads.
+  useEffect(() => {
+    if (!storeInfo) return;
+    const current = form.getValues('paymentMethod');
+    if (current === 'razorpay' && !razorpayAvailable) {
+      form.setValue('paymentMethod', OrderInputPaymentMethod.cod);
+    } else if (current === 'cod' && !codAvailable && razorpayAvailable) {
+      form.setValue('paymentMethod', OrderInputPaymentMethod.razorpay);
+    }
+  }, [storeInfo, razorpayAvailable, codAvailable, form]);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -162,7 +180,9 @@ export default function Checkout() {
   };
 
   const subtotal = cartTotal;
-  const shipping = subtotal > 999 ? 0 : 100;
+  const freeThreshold = storeInfo?.freeShippingThreshold ?? 999;
+  const shippingCharge = storeInfo?.standardShippingCharge ?? 60;
+  const shipping = subtotal >= freeThreshold ? 0 : shippingCharge;
   const discount = discountData?.amount || 0;
   const total = subtotal + shipping - discount;
 
@@ -240,14 +260,17 @@ export default function Checkout() {
                 <FormField control={form.control} name="paymentMethod" render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {razorpayAvailable && (
                         <FormItem className="flex items-center space-x-3 space-y-0 rounded-lg border border-border p-4 bg-background cursor-pointer hover:border-primary transition-colors [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5">
                           <FormControl><RadioGroupItem value="razorpay" /></FormControl>
                           <FormLabel className="font-medium flex-1 cursor-pointer">
-                            Pay Online
+                            Pay Online (Razorpay)
                             <p className="text-xs text-muted-foreground font-normal mt-1">UPI, Credit/Debit Cards, NetBanking</p>
                           </FormLabel>
                         </FormItem>
+                        )}
+                        {codAvailable && (
                         <FormItem className="flex items-center space-x-3 space-y-0 rounded-lg border border-border p-4 bg-background cursor-pointer hover:border-primary transition-colors [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5">
                           <FormControl><RadioGroupItem value="cod" /></FormControl>
                           <FormLabel className="font-medium flex-1 cursor-pointer">
@@ -255,7 +278,13 @@ export default function Checkout() {
                             <p className="text-xs text-muted-foreground font-normal mt-1">Pay at your doorstep</p>
                           </FormLabel>
                         </FormItem>
+                        )}
                       </RadioGroup>
+                      {!razorpayAvailable && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Online payment is not enabled yet — the owner can enable it from the dashboard (Settings → Razorpay Keys).
+                        </p>
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>

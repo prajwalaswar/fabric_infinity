@@ -8,8 +8,9 @@ router.get("/reviews", async (req, res): Promise<void> => {
   const { productId } = req.query as { productId?: string };
 
   let query = db.select().from(reviewsTable).orderBy(desc(reviewsTable.createdAt)).$dynamic();
-  if (productId) {
-    query = query.where(eq(reviewsTable.productId, parseInt(productId, 10)));
+  const parsedProductId = productId ? parseInt(String(productId), 10) : NaN;
+  if (!isNaN(parsedProductId)) {
+    query = query.where(eq(reviewsTable.productId, parsedProductId));
   }
 
   const reviews = await query.limit(50);

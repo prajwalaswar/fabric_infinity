@@ -22,4 +22,6 @@ export interface SiteSettings {
   metaTitle?: string;
   metaDescription?: string;
   announcementBar?: string;
+  razorpayKeyId?: string;
+  razorpayKeySecret?: string;
 }

@@ -40,10 +40,25 @@ tags:
     description: Admin customer management
   - name: admin-settings
     description: Admin site settings
+  - name: settings
+    description: Public store settings
   - name: Storage
     description: Persistent image storage
 
 paths:
+  /store-info:
+    get:
+      operationId: getStoreInfo
+      tags: [settings]
+      summary: Public store information and payment availability
+      responses:
+        "200":
+          description: Store info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreInfo"
+
   /healthz:
     get:
       operationId: healthCheck
@@ -913,6 +928,18 @@ paths:
 # ─── SCHEMAS ──────────────────────────────────────────────────────────────────
 components:
   schemas:
+    StoreInfo:
+      type: object
+      required: [storeName, announcementBar, whatsappNumber, razorpayEnabled, codEnabled, razorpayConfigured, freeShippingThreshold, standardShippingCharge]
+      properties:
+        storeName: { type: string }
+        announcementBar: { type: string }
+        whatsappNumber: { type: string }
+        razorpayEnabled: { type: boolean }
+        codEnabled: { type: boolean }
+        razorpayConfigured: { type: boolean }
+        freeShippingThreshold: { type: number }
+        standardShippingCharge: { type: number }
     HealthStatus:
       type: object
       required: [status]
@@ -1324,6 +1351,8 @@ components:
         metaTitle: { type: string }
         metaDescription: { type: string }
         announcementBar: { type: string }
+        razorpayKeyId: { type: string }
+        razorpayKeySecret: { type: string }
 
     SiteSettingsUpdate:
       type: object
@@ -1343,6 +1372,8 @@ components:
         metaTitle: { type: string }
         metaDescription: { type: string }
         announcementBar: { type: string }
+        razorpayKeyId: { type: string }
+        razorpayKeySecret: { type: string }
 
     SuccessResponse:
       type: object

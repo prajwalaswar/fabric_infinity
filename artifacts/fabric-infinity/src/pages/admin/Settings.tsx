@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-import { Save, Loader2, Eye, EyeOff, Bot, Key } from 'lucide-react';
+import { Save, Loader2, Eye, EyeOff, Bot, Key, CreditCard, ExternalLink } from 'lucide-react';
 
 type SettingsState = {
   storeName: string;
@@ -51,6 +51,13 @@ export default function AdminSettings() {
   const [showGroqKey, setShowGroqKey] = useState(false);
   const [savingGroq, setSavingGroq] = useState(false);
 
+  // Razorpay credentials — pasted by the owner, stored server-side
+  const [rzpKeyId, setRzpKeyId] = useState('');
+  const [rzpKeySecret, setRzpKeySecret] = useState('');
+  const [rzpSecretSet, setRzpSecretSet] = useState(false);
+  const [showRzpSecret, setShowRzpSecret] = useState(false);
+  const [savingRzp, setSavingRzp] = useState(false);
+
   useEffect(() => {
     if (data) {
       setForm({
@@ -72,6 +79,9 @@ export default function AdminSettings() {
       // If groqApiKey is returned as non-empty (even masked), mark it as set
       const rawKey = toStr((data as Record<string, unknown>).groqApiKey);
       setGroqKeySet(rawKey.length > 0 && rawKey !== '');
+      const d = data as Record<string, unknown>;
+      setRzpKeyId(toStr(d.razorpayKeyId));
+      setRzpSecretSet(toStr(d.razorpayKeySecret) !== '');
     }
   }, [data]);
 
@@ -142,6 +152,68 @@ export default function AdminSettings() {
     }
   };
 
+  const handleSaveRazorpayKeys = async () => {
+    if (!rzpKeyId.trim()) {
+      toast({ variant: 'destructive', title: 'Please enter your Razorpay Key ID' });
+      return;
+    }
+    if (!rzpKeySecret.trim() && !rzpSecretSet) {
+      toast({ variant: 'destructive', title: 'Please enter your Razorpay Key Secret' });
+      return;
+    }
+    setSavingRzp(true);
+    try {
+      const payload: Record<string, string> = { razorpayKeyId: rzpKeyId.trim() };
+      // Only overwrite the secret when a new one was typed in.
+      if (rzpKeySecret.trim()) payload.razorpayKeySecret = rzpKeySecret.trim();
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || 'The Razorpay keys could not be saved');
+      }
+      setRzpSecretSet(true);
+      setRzpKeySecret('');
+      setShowRzpSecret(false);
+      toast({
+        title: 'Razorpay keys saved',
+        description: 'Online payments are now enabled on the checkout page.',
+      });
+    } catch (err: unknown) {
+      toast({ variant: 'destructive', title: 'Failed to save keys', description: err instanceof Error ? err.message : 'Unknown error' });
+    } finally {
+      setSavingRzp(false);
+    }
+  };
+
+  const handleRemoveRazorpayKeys = async () => {
+    setSavingRzp(true);
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ razorpayKeyId: '', razorpayKeySecret: '' }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || 'The Razorpay keys could not be removed');
+      }
+      setRzpKeyId('');
+      setRzpSecretSet(false);
+      setRzpKeySecret('');
+      toast({ title: 'Razorpay keys removed', description: 'Online payments are disabled until keys are added again.' });
+    } catch (err: unknown) {
+      toast({ variant: 'destructive', title: 'Failed', description: err instanceof Error ? err.message : 'Unknown error' });
+    } finally {
+      setSavingRzp(false);
+    }
+  };
+
   if (isLoading) {
     return <AdminLayout><div className="flex justify-center items-center h-64"><Loader2 className="animate-spin" size={32} /></div></AdminLayout>;
   }
@@ -190,6 +262,76 @@ export default function AdminSettings() {
           <div className="flex items-center justify-between">
             <div><p className="font-medium">Cash on Delivery</p><p className="text-xs text-muted-foreground">Pay when the order arrives</p></div>
             <Switch checked={form.codEnabled} onCheckedChange={v => setForm(p => ({...p, codEnabled: v}))} data-testid="switch-cod-enabled" />
+          </div>
+        </div>
+
+        {/* Razorpay Credentials */}
+        <div className="bg-card border border-border rounded-xl p-6 space-y-5" data-testid="razorpay-settings">
+          <div className="flex items-center gap-2">
+            <CreditCard size={20} className="text-primary" />
+            <h2 className="font-semibold text-lg">Razorpay Keys</h2>
+            {rzpSecretSet ? (
+              <span className="ml-auto text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
+                Connected ✓
+              </span>
+            ) : (
+              <span className="ml-auto text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                Not configured
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Paste your Razorpay credentials here to accept online payments (UPI, cards, net banking, wallets). No code changes needed — checkout updates automatically once keys are saved.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Get your keys from the Razorpay dashboard:{' '}
+            <a href="https://dashboard.razorpay.com/app/keys" target="_blank" rel="noopener noreferrer" className="text-primary underline inline-flex items-center gap-1">
+              Settings → API Keys <ExternalLink size={11} />
+            </a>
+            {' '}Use <strong>Test Mode</strong> keys first to try payments safely, then switch to Live keys when ready.
+          </p>
+          <div className="space-y-2">
+            <Label htmlFor="razorpay-key-id">Key ID <span className="text-muted-foreground font-normal">(starts with rzp_test_ or rzp_live_)</span></Label>
+            <Input
+              id="razorpay-key-id"
+              value={rzpKeyId}
+              onChange={e => setRzpKeyId(e.target.value)}
+              placeholder="rzp_test_xxxxxxxxxxxxxx"
+              data-testid="input-razorpay-key-id"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="razorpay-key-secret">Key Secret {rzpSecretSet && <span className="text-green-600 dark:text-green-400 font-normal">(saved — leave blank to keep it)</span>}</Label>
+            <div className="relative">
+              <Input
+                id="razorpay-key-secret"
+                type={showRzpSecret ? 'text' : 'password'}
+                value={rzpKeySecret}
+                onChange={e => setRzpKeySecret(e.target.value)}
+                placeholder={rzpSecretSet ? 'Enter a new secret to replace...' : 'Paste your Key Secret here'}
+                className="pr-10"
+                data-testid="input-razorpay-key-secret"
+              />
+              <button
+                type="button"
+                onClick={() => setShowRzpSecret(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Toggle secret visibility"
+              >
+                {showRzpSecret ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button onClick={handleSaveRazorpayKeys} disabled={savingRzp} className="gap-2" data-testid="button-save-razorpay">
+              {savingRzp ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+              Save Keys
+            </Button>
+            {(rzpKeyId || rzpSecretSet) && (
+              <Button variant="outline" onClick={handleRemoveRazorpayKeys} disabled={savingRzp} className="text-destructive hover:text-destructive">
+                Remove
+              </Button>
+            )}
           </div>
         </div>
 

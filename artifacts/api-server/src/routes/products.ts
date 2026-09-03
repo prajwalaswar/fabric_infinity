@@ -65,8 +65,14 @@ router.get("/products", async (req, res): Promise<void> => {
   if (bestseller === "true") conditions.push(eq(productsTable.isBestseller, true));
   if (newArrival === "true") conditions.push(eq(productsTable.isNewArrival, true));
 
+  // Relevance-ranked search: products whose NAME matches the query float to
+  // the top, then bestsellers/featured, then newest first. This is what makes
+  // "searched product comes up first" actually feel right.
+  const nameMatch = sql`case when ${productsTable.name} ilike ${`%${(search ?? "").trim()}%`} then 0 else 1 end`;
   let orderBy = desc(productsTable.createdAt);
-  if (sort === "price_asc") orderBy = asc(productsTable.price);
+  if (search?.trim()) {
+    orderBy = sql`${nameMatch}, ${desc(productsTable.isBestseller)}, ${desc(productsTable.createdAt)}`;
+  } else if (sort === "price_asc") orderBy = asc(productsTable.price);
   else if (sort === "price_desc") orderBy = desc(productsTable.price);
   else if (sort === "popular") orderBy = desc(productsTable.isBestseller);
 

@@ -24,7 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Upload, X, Loader2, Sparkles, Wand2 } from 'lucide-react';
 import { Link } from 'wouter';
-import { uploadAdminImage } from '@/lib/upload';
+import { uploadAdminImage, readImageAsDataUrl } from '@/lib/upload';
 
 interface ProductFormState {
   name: string;
@@ -69,6 +69,9 @@ export default function ProductForm() {
   const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [lastUploadedImage, setLastUploadedImage] = useState<string | null>(null);
+  // Base64 of the most recently uploaded image so AI analysis can be sent
+  // straight from the browser without depending on server-side file access.
+  const [lastUploadedImageDataUrl, setLastUploadedImageDataUrl] = useState<string | null>(null);
 
   const { data: product, isLoading: productLoading } = useAdminGetProduct(
     Number(id),
@@ -103,9 +106,13 @@ export default function ProductForm() {
     if (!file) return;
     setUploading(true);
     try {
-      const imageUrl = await uploadAdminImage(file);
+      const [imageUrl, dataUrl] = await Promise.all([
+        uploadAdminImage(file),
+        readImageAsDataUrl(file),
+      ]);
       setForm(prev => ({ ...prev, images: [...prev.images, imageUrl] }));
       setLastUploadedImage(imageUrl);
+      setLastUploadedImageDataUrl(dataUrl);
     } catch (err: unknown) {
       toast({ variant: 'destructive', title: 'Upload failed', description: err instanceof Error ? err.message : 'Unknown error' });
     } finally {
@@ -117,11 +124,14 @@ export default function ProductForm() {
   const handleAnalyzeWithAI = async (imageUrl: string) => {
     setAnalyzing(true);
     try {
+      // If this is the image we just uploaded, send its base64 data directly —
+      // no dependency on server-side storage at all.
+      const imageDataUrl = lastUploadedImage === imageUrl ? lastUploadedImageDataUrl : null;
       const res = await fetch('/api/admin/ai/analyze-fabric', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ imageUrl }),
+        body: JSON.stringify({ imageUrl, imageDataUrl }),
       });
       const data = await res.json();
 
@@ -177,6 +187,7 @@ export default function ProductForm() {
       // If we removed the last-uploaded image, clear it
       if (lastUploadedImage && !newImages.includes(lastUploadedImage)) {
         setLastUploadedImage(newImages.length > 0 ? newImages[newImages.length - 1] : null);
+        setLastUploadedImageDataUrl(null);
       }
       return { ...prev, images: newImages };
     });

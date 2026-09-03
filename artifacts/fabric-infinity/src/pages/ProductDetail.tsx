@@ -19,7 +19,10 @@ export default function ProductDetail() {
   const { data: product, isLoading } = useGetProduct(productId, { 
     query: { enabled: !!id && !isNaN(productId), queryKey: getGetProductQueryKey(productId) } 
   });
-  const { data: reviews } = useListReviews({ productId });
+  const { data: reviews } = useListReviews(
+    !isNaN(productId) ? { productId } : undefined,
+    { query: { enabled: !isNaN(productId) } },
+  );
   
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);

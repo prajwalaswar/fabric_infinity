@@ -12,7 +12,12 @@ const SETTING_KEYS = [
   "instagramUrl", "facebookUrl", "whatsappNumber",
   "metaTitle", "metaDescription", "announcementBar",
   "groqApiKey",
+  "razorpayKeyId", "razorpayKeySecret",
 ];
+
+// Keys whose raw value must never be returned to the browser.
+// The dashboard only needs to know whether they are configured.
+const SECRET_KEYS = new Set(["groqApiKey", "razorpayKeySecret"]);
 
 async function getAllSettings() {
   const rows = await db.select().from(settingsTable);
@@ -22,14 +27,22 @@ async function getAllSettings() {
     standardShippingCharge: 60, razorpayEnabled: true, codEnabled: true,
     instagramUrl: "", facebookUrl: "", whatsappNumber: "",
     metaTitle: "Fabric Infinity", metaDescription: "", announcementBar: "",
+    razorpayKeyId: "", razorpayKeySecret: "",
   };
   for (const row of rows) {
     if (SETTING_KEYS.includes(row.key)) {
       const val = row.value;
-      if (row.key === "groqApiKey") {
-        // The AI route reads the key server-side; never return the credential
-        // to the browser. The settings screen only needs to know if it exists.
+      if (SECRET_KEYS.has(row.key)) {
+        // These credentials are read server-side only; never return the raw
+        // value to the browser. The settings screen just needs to know if
+        // they exist.
         result[row.key] = val ? "configured" : "";
+        continue;
+      }
+      if (row.key === "razorpayKeyId") {
+        // Key IDs are not secret (they are needed by the browser checkout
+        // anyway) but are stored empty-by-default.
+        result[row.key] = val ?? "";
         continue;
       }
       if (val === "true") result[row.key] = true;

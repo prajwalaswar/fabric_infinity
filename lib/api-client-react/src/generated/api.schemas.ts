@@ -5,6 +5,17 @@
  * Fabric Infinity E-Commerce API
  * OpenAPI spec version: 0.1.0
  */
+export interface StoreInfo {
+  storeName: string;
+  announcementBar: string;
+  whatsappNumber: string;
+  razorpayEnabled: boolean;
+  codEnabled: boolean;
+  razorpayConfigured: boolean;
+  freeShippingThreshold: number;
+  standardShippingCharge: number;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -378,6 +389,8 @@ export interface SiteSettings {
   metaTitle?: string;
   metaDescription?: string;
   announcementBar?: string;
+  razorpayKeyId?: string;
+  razorpayKeySecret?: string;
 }
 
 export interface SiteSettingsUpdate {
@@ -396,6 +409,8 @@ export interface SiteSettingsUpdate {
   metaTitle?: string;
   metaDescription?: string;
   announcementBar?: string;
+  razorpayKeyId?: string;
+  razorpayKeySecret?: string;
 }
 
 export interface SuccessResponse {

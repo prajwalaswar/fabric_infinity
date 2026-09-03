@@ -4,16 +4,41 @@ import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
 import Razorpay from "razorpay";
 
+async function getSetting(key: string): Promise<string | null> {
+  const [row] = await db
+    .select()
+    .from(settingsTable)
+    .where(eq(settingsTable.key, key))
+    .limit(1);
+  return row?.value ?? null;
+}
+
+/**
+ * Resolve the Razorpay credentials. Keys saved from the owner dashboard
+ * (Settings → Payments) take priority; environment variables are the fallback
+ * so Replit Secrets keep working too.
+ */
+async function getRazorpayKeys(): Promise<{ keyId: string; keySecret: string } | null> {
+  const [idRow, secretRow] = await Promise.all([
+    getSetting("razorpayKeyId"),
+    getSetting("razorpayKeySecret"),
+  ]);
+  const keyId = idRow || process.env.RAZORPAY_KEY_ID || "";
+  const keySecret = secretRow || process.env.RAZORPAY_KEY_SECRET || "";
+  if (!keyId || !keySecret) return null;
+  return { keyId, keySecret };
+}
+
 const router: IRouter = Router();
 
 function generateOrderNumber(): string {
   return `FI${Date.now().toString(36).toUpperCase()}`;
 }
 
-function getRazorpay(): Razorpay {
+function getRazorpay(keys: { keyId: string; keySecret: string }): Razorpay {
   return new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID || "",
-    key_secret: process.env.RAZORPAY_KEY_SECRET || "",
+    key_id: keys.keyId,
+    key_secret: keys.keySecret,
   });
 }
 
@@ -110,19 +135,32 @@ router.post("/orders", async (req, res): Promise<void> => {
   let razorpayKeyId: string | null = null;
 
   if (paymentMethod === "razorpay") {
+    const keys = await getRazorpayKeys();
+    if (!keys) {
+      res.status(400).json({
+        error:
+          "Online payments are not configured yet. Please choose Cash on Delivery, or ask the store owner to add their Razorpay keys in the dashboard (Settings → Payments).",
+      });
+      return;
+    }
     try {
-      const razorpay = getRazorpay();
+      const razorpay = getRazorpay(keys);
       const rzpOrder = await razorpay.orders.create({
         amount: Math.round(total * 100), // in paise
         currency: "INR",
         receipt: orderNumber,
       });
       razorpayOrderId = rzpOrder.id;
-      razorpayKeyId = process.env.RAZORPAY_KEY_ID || null;
+      razorpayKeyId = keys.keyId;
 
       await db.update(ordersTable).set({ razorpayOrderId: rzpOrder.id }).where(eq(ordersTable.id, order.id));
     } catch (err) {
       req.log.error({ err }, "Failed to create Razorpay order");
+      res.status(502).json({
+        error:
+          "Payment gateway could not be reached. Please try again in a moment, or choose Cash on Delivery.",
+      });
+      return;
     }
   }
 
@@ -155,7 +193,11 @@ router.post("/payments/razorpay/verify", async (req, res): Promise<void> => {
     return;
   }
 
-  const secret = process.env.RAZORPAY_KEY_SECRET || "";
+  const secret = (await getSetting("razorpayKeySecret")) || process.env.RAZORPAY_KEY_SECRET || "";
+  if (!secret) {
+    res.status(400).json({ success: false, orderNumber, message: "Payment gateway is not configured" });
+    return;
+  }
   const body = razorpayOrderId + "|" + razorpayPaymentId;
   const expectedSignature = crypto.createHmac("sha256", secret).update(body).digest("hex");
 

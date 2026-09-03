@@ -1,6 +1,6 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
-import { getListProductsQueryKey, useListProducts } from '@workspace/api-client-react';
+import { getListProductsQueryKey, useListProducts, useGetStoreInfo } from '@workspace/api-client-react';
 import { useCart } from '@/contexts/CartContext';
 import { ShoppingBag, Search, Menu, X, ChevronDown, User, MapPin, LayoutDashboard } from 'lucide-react';
 import { ChatWidget } from '@/components/store/ChatWidget';
@@ -161,6 +161,10 @@ function MegaMenuPanel({ groups, onClose }: { groups: NonNullable<typeof NAV_CAT
 
 export function Navbar() {
   const { cartCount } = useCart();
+  const { data: storeInfo } = useGetStoreInfo();
+  const announcementText =
+    storeInfo?.announcementBar?.trim() ||
+    'Free shipping on all orders above ₹999  |  100% Handcrafted in India  |  Authentic Block Prints';
   const [, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
@@ -211,7 +215,7 @@ export function Navbar() {
     <header ref={headerRef} className="sticky top-0 z-50 w-full">
       {/* Announcement Bar */}
       <div className="bg-[hsl(220,40%,18%)] text-white py-2.5 px-4 text-center text-[11px] font-medium tracking-[0.15em] uppercase">
-        Free shipping on all orders above ₹999 &nbsp;|&nbsp; 100% Handcrafted in India &nbsp;|&nbsp; Authentic Block Prints
+        {announcementText}
       </div>
 
       {/* Main Header Bar */}
@@ -219,7 +223,7 @@ export function Navbar() {
         <div className="container mx-auto px-4 md:px-6 h-[68px] flex items-center justify-between">
           {/* Mobile Hamburger */}
           <button
-            className="md:hidden p-2 -ml-2 text-[hsl(220,30%,18%)]"
+            className="lg:hidden p-2 -ml-2 text-[hsl(220,30%,18%)]"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -240,7 +244,7 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Nav — triggers managed at this level */}
-          <nav className="hidden md:flex items-center gap-7">
+          <nav className="hidden lg:flex items-center gap-7">
             {NAV_CATEGORIES.map((item) =>
               item.mega ? (
                 <button
@@ -341,7 +345,7 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-[calc(68px+36px)] z-40 bg-white overflow-y-auto">
+        <div className="lg:hidden fixed inset-0 top-[calc(68px+36px)] z-40 bg-white overflow-y-auto">
           <div className="py-4">
             {NAV_CATEGORIES.map((item) => (
               <div key={item.label} className="border-b border-[#f0ebe3]">

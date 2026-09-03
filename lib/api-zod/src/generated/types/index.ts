@@ -51,6 +51,7 @@ export * from './salesByCategory';
 export * from './salesChartPoint';
 export * from './siteSettings';
 export * from './siteSettingsUpdate';
+export * from './storeInfo';
 export * from './successResponse';
 export * from './topProduct';
 export * from './uploadUrlRequest';
