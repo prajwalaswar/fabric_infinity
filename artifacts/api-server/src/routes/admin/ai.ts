@@ -18,7 +18,11 @@ async function getGroqApiKey(): Promise<string | null> {
     .from(settingsTable)
     .where(eq(settingsTable.key, "groqApiKey"))
     .limit(1);
-  return rows[0]?.value ?? process.env.GROQ_API_KEY ?? null;
+  const raw = rows[0]?.value || process.env.GROQ_API_KEY || null;
+  // People often copy the key from `export GROQ_API_KEY=$gsk_...` and include
+  // the leading `$` — strip it so the key still works.
+  const cleaned = raw?.trim().replace(/^\$+/, "");
+  return cleaned && cleaned.length > 0 ? cleaned : null;
 }
 
 /**

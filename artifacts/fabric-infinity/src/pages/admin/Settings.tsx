@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-import { Save, Loader2, Eye, EyeOff, Bot, Key, CreditCard, ExternalLink } from 'lucide-react';
+import { Save, Loader2, Eye, EyeOff, Bot, Key, CreditCard, ExternalLink, Mail } from 'lucide-react';
 
 type SettingsState = {
   storeName: string;
@@ -51,6 +51,14 @@ export default function AdminSettings() {
   const [showGroqKey, setShowGroqKey] = useState(false);
   const [savingGroq, setSavingGroq] = useState(false);
 
+  // Brevo (email OTP) credentials — pasted by the owner, stored server-side
+  const [brevoApiKey, setBrevoApiKey] = useState('');
+  const [brevoKeySet, setBrevoKeySet] = useState(false);
+  const [brevoSenderEmail, setBrevoSenderEmail] = useState('');
+  const [brevoSenderName, setBrevoSenderName] = useState('');
+  const [showBrevoKey, setShowBrevoKey] = useState(false);
+  const [savingBrevo, setSavingBrevo] = useState(false);
+
   // Razorpay credentials — pasted by the owner, stored server-side
   const [rzpKeyId, setRzpKeyId] = useState('');
   const [rzpKeySecret, setRzpKeySecret] = useState('');
@@ -82,6 +90,9 @@ export default function AdminSettings() {
       const d = data as Record<string, unknown>;
       setRzpKeyId(toStr(d.razorpayKeyId));
       setRzpSecretSet(toStr(d.razorpayKeySecret) !== '');
+      setBrevoKeySet(toStr(d.brevoApiKey) !== '');
+      setBrevoSenderEmail(toStr(d.brevoSenderEmail));
+      setBrevoSenderName(toStr(d.brevoSenderName));
     }
   }, [data]);
 
@@ -149,6 +160,65 @@ export default function AdminSettings() {
       toast({ variant: 'destructive', title: 'Failed', description: err instanceof Error ? err.message : 'Unknown error' });
     } finally {
       setSavingGroq(false);
+    }
+  };
+
+  const handleSaveBrevo = async () => {
+    if (!brevoKeySet && !brevoApiKey.trim()) {
+      toast({ variant: 'destructive', title: 'Please enter your Brevo API key' });
+      return;
+    }
+    if (!brevoSenderEmail.trim()) {
+      toast({ variant: 'destructive', title: 'Please enter the sender email address' });
+      return;
+    }
+    setSavingBrevo(true);
+    try {
+      const payload: Record<string, string> = {
+        brevoSenderEmail: brevoSenderEmail.trim(),
+        brevoSenderName: brevoSenderName.trim() || 'Fabric Infinity',
+      };
+      if (brevoApiKey.trim()) payload.brevoApiKey = brevoApiKey.trim();
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || 'The Brevo settings could not be saved');
+      }
+      setBrevoKeySet(true);
+      setBrevoApiKey('');
+      toast({ title: 'Brevo email settings saved', description: 'Customers will now receive OTP emails.' });
+    } catch (err: unknown) {
+      toast({ variant: 'destructive', title: 'Failed to save', description: err instanceof Error ? err.message : 'Unknown error' });
+    } finally {
+      setSavingBrevo(false);
+    }
+  };
+
+  const handleRemoveBrevoKey = async () => {
+    setSavingBrevo(true);
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ brevoApiKey: '' }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || 'The Brevo API key could not be removed');
+      }
+      setBrevoKeySet(false);
+      setBrevoApiKey('');
+      toast({ title: 'Brevo API key removed' });
+    } catch (err: unknown) {
+      toast({ variant: 'destructive', title: 'Failed', description: err instanceof Error ? err.message : 'Unknown error' });
+    } finally {
+      setSavingBrevo(false);
     }
   };
 
@@ -330,6 +400,89 @@ export default function AdminSettings() {
             {(rzpKeyId || rzpSecretSet) && (
               <Button variant="outline" onClick={handleRemoveRazorpayKeys} disabled={savingRzp} className="text-destructive hover:text-destructive">
                 Remove
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Brevo Email (OTP) Credentials */}
+        <div className="bg-card border border-border rounded-xl p-6 space-y-5" data-testid="brevo-settings">
+          <div className="flex items-center gap-2">
+            <Mail size={20} className="text-primary" />
+            <h2 className="font-semibold text-lg">Email OTP (Brevo)</h2>
+            {brevoKeySet && brevoSenderEmail ? (
+              <span className="ml-auto text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
+                Connected ✓
+              </span>
+            ) : (
+              <span className="ml-auto text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                Not configured
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Customer sign-in codes (OTP) are sent by email through Brevo's free plan (300 emails/day). Paste your Brevo API key and sender email here — no code changes needed.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Get a free account at{' '}
+            <a href="https://app.brevo.com/settings/keys/api" target="_blank" rel="noopener noreferrer" className="text-primary underline inline-flex items-center gap-1">
+              brevo.com <ExternalLink size={11} />
+            </a>
+            {' '}— create an API key (v3). The sender email must be verified in Brevo (SMTP &amp; Email → Senders).
+          </p>
+          <div className="space-y-2">
+            <Label htmlFor="brevo-api-key">API Key {brevoKeySet && <span className="text-green-600 dark:text-green-400 font-normal">(saved — leave blank to keep it)</span>}</Label>
+            <div className="relative">
+              <Input
+                id="brevo-api-key"
+                type={showBrevoKey ? 'text' : 'password'}
+                value={brevoApiKey}
+                onChange={e => setBrevoApiKey(e.target.value)}
+                placeholder={brevoKeySet ? 'Enter a new key to replace...' : 'xkeysib-xxxxxxxxxxxxxxxxxx'}
+                className="pr-10"
+                data-testid="input-brevo-api-key"
+              />
+              <button
+                type="button"
+                onClick={() => setShowBrevoKey(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Toggle key visibility"
+              >
+                {showBrevoKey ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="brevo-sender-email">Sender Email <span className="text-muted-foreground font-normal">(verified in Brevo)</span></Label>
+              <Input
+                id="brevo-sender-email"
+                type="email"
+                value={brevoSenderEmail}
+                onChange={e => setBrevoSenderEmail(e.target.value)}
+                placeholder="yourstore@example.com"
+                data-testid="input-brevo-sender-email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="brevo-sender-name">Sender Name</Label>
+              <Input
+                id="brevo-sender-name"
+                value={brevoSenderName}
+                onChange={e => setBrevoSenderName(e.target.value)}
+                placeholder="Fabric Infinity"
+                data-testid="input-brevo-sender-name"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button onClick={handleSaveBrevo} disabled={savingBrevo} className="gap-2" data-testid="button-save-brevo">
+              {savingBrevo ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+              Save Email Settings
+            </Button>
+            {brevoKeySet && (
+              <Button variant="outline" onClick={handleRemoveBrevoKey} disabled={savingBrevo} className="text-destructive hover:text-destructive">
+                Remove Key
               </Button>
             )}
           </div>

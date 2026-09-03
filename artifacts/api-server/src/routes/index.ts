@@ -9,6 +9,7 @@ import couponsRouter from "./coupons";
 import authRouter from "./auth";
 import adminRouter from "./admin";
 import contactRouter from "./contact";
+import chatRouter from "./chat";
 import storageRouter from "./storage";
 import storeInfoRouter from "./storeInfo";
 
@@ -24,6 +25,7 @@ router.use(couponsRouter);
 router.use(authRouter);
 router.use(adminRouter);
 router.use(contactRouter);
+router.use(chatRouter);
 router.use(storeInfoRouter);
 router.use(storageRouter);
 

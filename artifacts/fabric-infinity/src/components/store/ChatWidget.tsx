@@ -9,8 +9,9 @@ interface Message {
   text: string;
 }
 
-// WhatsApp number from environment variable (set via Replit Secrets / env vars)
-const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined;
+// WhatsApp number — read live from the dashboard setting via /api/store-info,
+// falling back to the VITE_WHATSAPP_NUMBER env var.
+const WA_NUMBER_ENV = import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined;
 
 // ── FAQ keyword responder ────────────────────────────────────────────────────
 const FAQ_RESPONSES: Array<{ match: string[]; reply: string }> = [
@@ -160,11 +161,37 @@ function EmailTab() {
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
+// Split text on URLs so wa.me links inside bot replies become tappable
+function renderBotText(text: string) {
+  // Strip common markdown the AI might emit so it reads like plain chat text
+  const plain = text
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/^#{1,4}\s+/gm, "")
+    .replace(/`{1,3}/g, "");
+  const parts = plain.split(/(https?:\/\/[^\s)]+)/g);
+  return parts.map((part, i) =>
+    /^https?:\/\//.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noreferrer"
+        className="text-[#1e40af] underline break-all"
+      >
+        {part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    ),
+  );
+}
+
 export function ChatWidget() {
+  const [waNumber, setWaNumber] = useState<string | undefined>(WA_NUMBER_ENV);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>('whatsapp');
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'bot', text: "Hello! 👋 I'm Fabric Infinity's FAQ assistant. Ask me about fabrics, pricing, shipping, or returns. For complex queries, switch to WhatsApp." },
+    { role: 'bot', text: "Hello! 👋 I'm the Fabric Infinity AI assistant. Ask me anything about our fabrics, shipping or returns — for prices and order issues I'll connect you to our team on WhatsApp." },
   ]);
   const [input, setInput] = useState('');
   const [faqLoading, setFaqLoading] = useState(false);
@@ -174,10 +201,18 @@ export function ChatWidget() {
     if (open) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, open]);
 
+  // Live WhatsApp number from the dashboard (Owner Dashboard > Settings)
+  useEffect(() => {
+    fetch('/api/store-info')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.whatsappNumber) setWaNumber(String(d.whatsappNumber)); })
+      .catch(() => {});
+  }, []);
+
   const handleWhatsApp = () => {
-    if (!WA_NUMBER) return;
+    if (!waNumber) return;
     window.open(
-      `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('Hello Fabric Infinity! I need help.')}`,
+      `https://wa.me/${waNumber}?text=${encodeURIComponent('Hello Fabric Infinity! I need help.')}`,
       '_blank',
     );
   };
@@ -186,17 +221,38 @@ export function ChatWidget() {
     if (!input.trim() || faqLoading) return;
     const userMsg = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    const history = [...messages, { role: 'user' as const, text: userMsg }];
+    setMessages(history);
     setFaqLoading(true);
-    await new Promise(r => setTimeout(r, 500));
-    setMessages(prev => [...prev, { role: 'bot', text: getFaqReply(userMsg) }]);
-    setFaqLoading(false);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: history.map(m => ({
+            role: m.role === 'user' ? 'user' : 'assistant',
+            content: m.text,
+          })),
+        }),
+      });
+      if (!res.ok) throw new Error('chat unavailable');
+      const data = await res.json();
+      if (!data?.reply) throw new Error('empty reply');
+      setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
+    } catch {
+      // AI unavailable (no Groq key / network) — keyword FAQ fallback
+      await new Promise(r => setTimeout(r, 500));
+      setMessages(prev => [...prev, { role: 'bot', text: getFaqReply(userMsg) }]);
+    } finally {
+      setFaqLoading(false);
+    }
   };
 
   const TABS: Array<{ id: Tab; label: string; emoji: string }> = [
     { id: 'whatsapp', label: 'WhatsApp', emoji: '💬' },
     { id: 'email', label: 'Email', emoji: '✉️' },
-    { id: 'faq', label: 'FAQ Bot', emoji: '🤖' },
+    { id: 'faq', label: 'AI Chat', emoji: '🤖' },
   ];
 
   return (
@@ -254,7 +310,7 @@ export function ChatWidget() {
                 <p className="text-gray-500 text-sm text-center leading-relaxed">
                   Chat with us directly on WhatsApp. We typically reply within a few minutes.
                 </p>
-                {WA_NUMBER ? (
+                {waNumber ? (
                   <button
                     onClick={handleWhatsApp}
                     className="w-full py-3 rounded-full bg-[#25D366] text-white font-semibold flex items-center justify-center gap-2 hover:bg-[#1fbb58] transition-colors shadow-md text-sm"
@@ -268,7 +324,7 @@ export function ChatWidget() {
                   </button>
                 ) : (
                   <p className="text-xs text-gray-400 italic text-center">
-                    WhatsApp not configured. Set <code>VITE_WHATSAPP_NUMBER</code> in environment variables.
+                    WhatsApp not configured. Set the WhatsApp number in Owner Dashboard &gt; Settings.
                   </p>
                 )}
                 <p className="text-gray-400 text-xs text-center">Available Mon–Sat, 10 am–7 pm IST</p>
@@ -288,8 +344,8 @@ export function ChatWidget() {
                       className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       {m.role === 'bot' && (
-                        <div className="w-7 h-7 rounded-full bg-[#1e3a8a] flex items-center justify-center flex-shrink-0 mt-0.5 text-white text-xs font-bold">
-                          FAQ
+                        <div className="w-7 h-7 rounded-full bg-[#1e3a8a] flex items-center justify-center flex-shrink-0 mt-0.5 text-white text-[10px] font-bold">
+                          AI
                         </div>
                       )}
                       <div
@@ -299,14 +355,14 @@ export function ChatWidget() {
                             : 'bg-gray-100 text-gray-800 rounded-bl-none'
                         }`}
                       >
-                        {m.text}
+                        {m.role === 'bot' ? renderBotText(m.text) : m.text}
                       </div>
                     </div>
                   ))}
                   {faqLoading && (
                     <div className="flex gap-2">
-                      <div className="w-7 h-7 rounded-full bg-[#1e3a8a] flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
-                        FAQ
+                      <div className="w-7 h-7 rounded-full bg-[#1e3a8a] flex items-center justify-center flex-shrink-0 text-white text-[10px] font-bold">
+                        AI
                       </div>
                       <div className="bg-gray-100 px-4 py-2 rounded-2xl rounded-bl-none flex items-center gap-1">
                         <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]" />
@@ -318,7 +374,7 @@ export function ChatWidget() {
                   <div ref={messagesEndRef} />
                 </div>
                 <p className="text-[10px] text-gray-400 text-center pb-1">
-                  Automated FAQ assistant — for complex queries use WhatsApp
+                  AI-powered assistant — for prices & order issues use the WhatsApp tab
                 </p>
                 <div className="border-t border-gray-100 p-3 flex gap-2">
                   <input

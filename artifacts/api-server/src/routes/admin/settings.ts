@@ -13,11 +13,12 @@ const SETTING_KEYS = [
   "metaTitle", "metaDescription", "announcementBar",
   "groqApiKey",
   "razorpayKeyId", "razorpayKeySecret",
+  "brevoApiKey", "brevoSenderEmail", "brevoSenderName",
 ];
 
 // Keys whose raw value must never be returned to the browser.
 // The dashboard only needs to know whether they are configured.
-const SECRET_KEYS = new Set(["groqApiKey", "razorpayKeySecret"]);
+const SECRET_KEYS = new Set(["groqApiKey", "razorpayKeySecret", "brevoApiKey"]);
 
 async function getAllSettings() {
   const rows = await db.select().from(settingsTable);
@@ -28,6 +29,7 @@ async function getAllSettings() {
     instagramUrl: "", facebookUrl: "", whatsappNumber: "",
     metaTitle: "Fabric Infinity", metaDescription: "", announcementBar: "",
     razorpayKeyId: "", razorpayKeySecret: "",
+    brevoApiKey: "", brevoSenderEmail: "", brevoSenderName: "",
   };
   for (const row of rows) {
     if (SETTING_KEYS.includes(row.key)) {

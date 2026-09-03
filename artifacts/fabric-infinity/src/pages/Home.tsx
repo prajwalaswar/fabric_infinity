@@ -97,14 +97,14 @@ function HeroCarousel() {
   const banners = apiBanners?.length ? apiBanners : LOCAL_BANNERS;
 
   return (
-    <div className="relative overflow-hidden w-full h-[56vh] md:h-[86vh]" ref={emblaRef}>
+    <div className="relative overflow-hidden w-full h-[62vh] md:h-[70vh] lg:h-[75vh] max-h-[720px]" ref={emblaRef}>
       <div className="flex w-full h-full">
         {banners.map((banner) => (
           <div key={banner.id} className="relative flex-[0_0_100%] min-w-0 h-full">
             <img
               src={(banner as any).image || (banner as any).imageUrl}
               alt={(banner as any).title || 'Banner'}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-top"
             />
             {/* Gradient overlay — bottom-up, darker at bottom for text legibility */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
@@ -270,7 +270,7 @@ export default function Home() {
 
       {/* Full-width banner CTA */}
       <section className="relative overflow-hidden h-[320px] md:h-[420px]">
-        <img src={fabric9} alt="Block Print Fabric" className="w-full h-full object-cover" />
+        <img src={fabric9} alt="Block Print Fabric" className="w-full h-full object-cover object-top" />
         <div className="absolute inset-0 bg-[hsl(220,40%,18%)]/70" />
         <div className="absolute inset-0 flex items-center justify-center text-center px-4">
           <div>

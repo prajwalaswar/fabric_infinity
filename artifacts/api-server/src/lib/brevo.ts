@@ -1,12 +1,41 @@
+import { db, settingsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+
 type BrevoEmailInput = {
   recipientEmail: string;
   otp: string;
 };
 
-function getBrevoConfig() {
-  const apiKey = process.env.BREVO_API_KEY;
-  const senderEmail = process.env.BREVO_SENDER_EMAIL;
-  const senderName = process.env.BREVO_SENDER_NAME || "Fabric Infinity";
+async function getSetting(key: string): Promise<string | null> {
+  if (!db) return null;
+  try {
+    const rows = await db
+      .select()
+      .from(settingsTable)
+      .where(eq(settingsTable.key, key))
+      .limit(1);
+    const val = rows[0]?.value;
+    return val && val.trim() !== "" ? val.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Brevo (free tier) transactional email for OTP codes.
+ * Keys come from the Owner Dashboard > Settings (saved in the DB),
+ * with environment variables as a fallback.
+ */
+async function getBrevoConfig() {
+  const [dbApiKey, dbSenderEmail, dbSenderName] = await Promise.all([
+    getSetting("brevoApiKey"),
+    getSetting("brevoSenderEmail"),
+    getSetting("brevoSenderName"),
+  ]);
+
+  const apiKey = dbApiKey || process.env.BREVO_API_KEY || "";
+  const senderEmail = dbSenderEmail || process.env.BREVO_SENDER_EMAIL || "";
+  const senderName = dbSenderName || process.env.BREVO_SENDER_NAME || "Fabric Infinity";
 
   if (!apiKey || !senderEmail) {
     return null;
@@ -19,8 +48,11 @@ export async function sendBrevoOtpEmail({
   recipientEmail,
   otp,
 }: BrevoEmailInput): Promise<boolean> {
-  const config = getBrevoConfig();
+  const config = await getBrevoConfig();
   if (!config) {
+    console.warn(
+      "[brevo] Not configured — add the Brevo API key and sender email in Owner Dashboard > Settings (or BREVO_API_KEY / BREVO_SENDER_EMAIL env vars)",
+    );
     return false;
   }
 
