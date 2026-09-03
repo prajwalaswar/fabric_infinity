@@ -27,3 +27,43 @@ channel = "stable-25_05"
 VITE_WHATSAPP_NUMBER = "918530361444"
 BREVO_SENDER_EMAIL = "prajwalaswar123@gmail.com"
 BREVO_SENDER_NAME = "Fabric_Infinity"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Fabric Infinity API"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Fabric Infinity Storefront"
+
+[[workflows.workflow]]
+name = "Fabric Infinity API"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=8080 pnpm --filter @workspace/api-server run dev"
+waitForPort = 8080
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "Fabric Infinity Storefront"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=19802 BASE_PATH=/ pnpm --filter @workspace/fabric-infinity run dev"
+waitForPort = 19802
+
+[workflows.workflow.metadata]
+outputType = "webview"

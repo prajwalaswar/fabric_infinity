@@ -1,5 +1,5 @@
 import { StoreLayout } from '@/components/layout/StoreLayout';
-import { useGetProduct, getGetProductQueryKey, useListReviews } from '@workspace/api-client-react';
+import { useGetProduct, getGetProductQueryKey, useListReviews, getListReviewsQueryKey } from '@workspace/api-client-react';
 import { useParams, Link } from 'wouter';
 import { useState } from 'react';
 import { useCart } from '@/contexts/CartContext';
@@ -21,7 +21,12 @@ export default function ProductDetail() {
   });
   const { data: reviews } = useListReviews(
     !isNaN(productId) ? { productId } : undefined,
-    { query: { enabled: !isNaN(productId) } },
+    {
+      query: {
+        enabled: !isNaN(productId),
+        queryKey: getListReviewsQueryKey(!isNaN(productId) ? { productId } : undefined),
+      },
+    },
   );
   
   const [selectedImage, setSelectedImage] = useState(0);
